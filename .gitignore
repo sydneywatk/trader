@@ -1,0 +1,11 @@
+.env
+cache/
+output/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+*.xlsx
+ibkr_signal_queue.json
+scanner_log.txt
