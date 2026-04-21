@@ -17,14 +17,14 @@ import os
 import time
 from datetime import datetime
 
-# Capture --dry-run before overwriting argv
+# Capture flags before overwriting argv
 _original_argv = sys.argv[:]
 dry_run = "--dry-run" in _original_argv
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Force sheets-only mode for the scanner
-sys.argv = [sys.argv[0], "--sheets-only"]
+sys.argv = [_original_argv[0], "--sheets-only"]
 
 
 def main() -> int:
@@ -50,14 +50,21 @@ def main() -> int:
         print(f"\n[DRY RUN] Would write {len(rows)} rows to Google Sheets:")
         print(f"  Tab: {run_ts.year}")
         print(f"  Columns: {' | '.join(HEADER)}")
+        print()
         for row in rows:
             sig_type = row[4]
             ticker = row[2]
             direction = row[3]
             rsi = row[12]
-            note = row[18] if row[18] else ""
-            print(f"  [{sig_type:>24s}]  {ticker:>6s}  {direction:>5s}  "
-                  f"RSI {rsi}  {note}")
+            wk_rsi = row[11]
+            macd = row[13]
+            earn = row[14]
+            d2e = row[15]
+            stop = row[7]
+            note = row[18]
+            print(f"  [{sig_type:>24s}] {ticker:>6s} {direction:>5s}  "
+                  f"RSI {rsi}  WkΔ {wk_rsi}  MACD: {macd}  "
+                  f"Earn: {earn} ({d2e}d)  Stop: {stop}  | {note}")
     else:
         try:
             n_written = append_signals(result, run_ts)

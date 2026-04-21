@@ -38,6 +38,7 @@ from signals import find_rsi_signals
 from earnings import fetch_earnings_dates, next_earnings_date
 from backtest import (
     run_backtest_for_ticker, _check_entry_conditions, _calc_stop_loss,
+    _get_weekly_rsi_on_date,
 )
 import ibkr_data
 
@@ -45,6 +46,81 @@ import ibkr_data
 LOOKBACK_DAYS = 10
 QUEUE_PATH = os.path.join(OUTPUT_DIR, "ibkr_signal_queue.json")
 OPEN_TRADES_PATH = os.path.join(OUTPUT_DIR, "ibkr_open_trades.json")
+
+
+def _diagnose_entry(d, w, spy, last_idx, sig_type, earn, last_date):
+    """Compute diagnostic fields for any signal (watching or aligned).
+
+    Returns dict with weekly_rsi_delta, macd_state, next_earnings,
+    days_to_earnings, and a list of blocker strings.
+    """
+    row = d.iloc[last_idx]
+    prev = d.iloc[last_idx - 1]
+    rsi_t = row["RSI"]; rsi_y = prev["RSI"]
+
+    # Weekly RSI
+    wrsi, wrsi_p = _get_weekly_rsi_on_date(w, last_date)
+    w_delta = float(wrsi - wrsi_p) if pd.notna(wrsi) and pd.notna(wrsi_p) else None
+
+    # MACD state
+    macd_l, macd_s = row["MACD"], row["MACD_signal"]
+    hist, prev_hist = row["MACD_hist"], prev["MACD_hist"]
+    prev_macd_l, prev_macd_s = prev["MACD"], prev["MACD_signal"]
+
+    if sig_type == "OS":
+        cross_today = pd.notna(prev_macd_l) and prev_macd_l <= prev_macd_s and macd_l > macd_s
+        aligned = (macd_l > macd_s) or (pd.notna(hist) and pd.notna(prev_hist)
+                                         and hist > 0 and hist > prev_hist)
+        macd_state = "crossed up today" if cross_today else \
+                     "aligned up" if aligned else "not aligned (bearish)"
+    else:
+        cross_today = pd.notna(prev_macd_l) and prev_macd_l >= prev_macd_s and macd_l < macd_s
+        aligned = (macd_l < macd_s) or (pd.notna(hist) and pd.notna(prev_hist)
+                                         and hist < 0 and hist < prev_hist)
+        macd_state = "crossed down today" if cross_today else \
+                     "aligned down" if aligned else "not aligned (bullish)"
+
+    # Earnings
+    nxt = next_earnings_date(earn, last_date.to_pydatetime()) if earn else None
+    earn_str = nxt.strftime("%Y-%m-%d") if nxt else ""
+    days_to_earn = (nxt.date() - last_date.date()).days if nxt else None
+
+    # Blockers
+    blockers = []
+    if pd.notna(rsi_t) and pd.notna(rsi_y):
+        if sig_type == "OS" and rsi_t <= rsi_y:
+            blockers.append("daily RSI falling")
+        elif sig_type == "OB" and rsi_t >= rsi_y:
+            blockers.append("daily RSI rising")
+    if not aligned:
+        blockers.append("MACD not aligned")
+    if w_delta is not None:
+        if sig_type == "OS" and w_delta <= WEEKLY_RSI_MIN_DELTA:
+            blockers.append(f"weekly RSI weak ({w_delta:+.1f}, need >+{WEEKLY_RSI_MIN_DELTA})")
+        elif sig_type == "OB" and w_delta >= -WEEKLY_RSI_MIN_DELTA:
+            blockers.append(f"weekly RSI weak ({w_delta:+.1f}, need <-{WEEKLY_RSI_MIN_DELTA})")
+    if days_to_earn is not None and days_to_earn <= EARNINGS_MIN_DAYS:
+        blockers.append(f"earnings {days_to_earn}d out — blocked until after")
+
+    # SPY
+    sp_mask = spy.index <= last_date
+    if sp_mask.sum() >= 2:
+        sr, sp2 = spy.loc[sp_mask].iloc[-1], spy.loc[sp_mask].iloc[-2]
+        if sig_type == "OS":
+            spy_ok = sr["RSI"] > sp2["RSI"] and sr["Close"] > sr["SMA50"]
+        else:
+            spy_ok = sr["RSI"] < sp2["RSI"] and sr["Close"] < sr["SMA50"] * 1.02
+        if not spy_ok:
+            blockers.append("SPY regime against direction")
+
+    return {
+        "weekly_rsi_delta": round(w_delta, 2) if w_delta is not None else None,
+        "macd_state": macd_state,
+        "macd_crossed": cross_today,
+        "next_earnings": earn_str,
+        "days_to_earnings": days_to_earn,
+        "blockers": blockers,
+    }
 
 
 # ── Tier classification ──────────────────────────────────────────────────────
@@ -120,12 +196,23 @@ def scan_ticker(ticker, spy, ib_session):
         if trades:
             lt = trades[-1]
             if lt["exit_date"] == last_date and "End of data" in lt.get("notes", ""):
+                sig_type = "OS" if lt["order"] == "Long" else "OB"
+                diag = _diagnose_entry(d, w, spy, last_idx, sig_type, earn, last_date)
+                days_in = (last_date - lt["entry_date"]).days
+                curr_price = round(last_row["Close"], 2)
+                curr_rsi = round(last_row["RSI"], 1) if pd.notna(last_row["RSI"]) else None
+                stop_rel = "above" if lt["order"] == "Long" and curr_price > lt["stop_loss"] else \
+                           "below" if lt["order"] == "Short" and curr_price < lt["stop_loss"] else "at"
                 out["open"] = {
                     "order": lt["order"], "entry_date": lt["entry_date"],
                     "entry_price": lt["entry_price"], "stop_loss": lt["stop_loss"],
-                    "current_price": round(last_row["Close"], 2),
-                    "days_in": (last_date - lt["entry_date"]).days,
-                    "current_rsi": round(last_row["RSI"], 1) if pd.notna(last_row["RSI"]) else None,
+                    "current_price": curr_price,
+                    "days_in": days_in, "current_rsi": curr_rsi,
+                    "weekly_rsi_delta": diag["weekly_rsi_delta"],
+                    "macd_state": diag["macd_state"],
+                    "next_earnings": diag["next_earnings"],
+                    "days_to_earnings": diag["days_to_earnings"],
+                    "notes": f"{days_in}d in trade, RSI {curr_rsi}, {stop_rel} stop ${lt['stop_loss']:.2f}",
                 }
 
         cutoff = d.index[max(0, last_idx - LOOKBACK_DAYS)]
@@ -183,11 +270,21 @@ def scan_ticker(ticker, spy, ib_session):
                 }
                 break
             else:
+                diag = _diagnose_entry(d, w, spy, last_idx, sig["type"], earn, last_date)
+                if diag["blockers"]:
+                    note = "; ".join(diag["blockers"])
+                else:
+                    note = "signal fresh, monitoring for entry"
                 out["watching"].append({
                     "order": "Long" if sig["type"] == "OS" else "Short",
                     "signal_date": sig["date"], "signal_rsi": round(sig["rsi"], 1),
                     "current_rsi": round(rsi_t, 1) if pd.notna(rsi_t) else None,
                     "spy_blocked": spy_blocked,
+                    "weekly_rsi_delta": diag["weekly_rsi_delta"],
+                    "macd_state": diag["macd_state"],
+                    "next_earnings": diag["next_earnings"],
+                    "days_to_earnings": diag["days_to_earnings"],
+                    "notes": note,
                 })
     except Exception as e:
         out["error"] = str(e)

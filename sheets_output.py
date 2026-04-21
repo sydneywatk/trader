@@ -67,75 +67,101 @@ def _ensure_tab(spreadsheet: gspread.Spreadsheet, tab_name: str) -> gspread.Work
     return ws
 
 
-def _format_signal_date(val) -> str:
-    """Convert pd.Timestamp / datetime / str to YYYY-MM-DD string."""
-    if val is None:
+def _fmt_date(val) -> str:
+    if val is None or val == "":
         return ""
     if hasattr(val, "strftime"):
         return val.strftime("%Y-%m-%d")
     return str(val)
 
 
-def build_rows(result: dict, run_ts: datetime) -> list[list]:
-    """Build sheet rows from a scanner result dict.
+def _fmt_price(val) -> str:
+    """Format price as string with 2 decimal places."""
+    if val is None or val == "":
+        return ""
+    try:
+        return f"{float(val):.2f}"
+    except (ValueError, TypeError):
+        return str(val)
 
-    Returns a list of row-lists (each matching HEADER columns).
-    """
+
+def _fmt_weekly_delta(val) -> str:
+    """Format weekly RSI delta as '+4.5 (up)' / '-2.1 (down)' / '0.0 (flat)'."""
+    if val is None:
+        return ""
+    v = float(val)
+    direction = "up" if v > 0.5 else "down" if v < -0.5 else "flat"
+    return f"{v:+.1f} ({direction})"
+
+
+def build_rows(result: dict, run_ts: datetime) -> list[list]:
+    """Build sheet rows from a scanner result dict."""
     run_date = run_ts.strftime("%Y-%m-%d")
     run_time = run_ts.strftime("%H:%M:%S")
     rows = []
 
-    # Actionable setups → NEW_ENTRY
+    # ── Actionable setups → NEW_ENTRY ──
     for _tk, a in result.get("aligned", []):
-        earn_date = a.get("next_earnings") or ""
-        if earn_date and a.get("signal_date"):
-            try:
-                from datetime import datetime as _dt
-                sig_dt = a["signal_date"]
-                if hasattr(sig_dt, "date"):
-                    sig_dt = sig_dt.date()
-                earn_dt = _dt.strptime(earn_date, "%Y-%m-%d").date() if isinstance(earn_date, str) else earn_date
-                days_to_earn = (earn_dt - sig_dt).days
-            except Exception:
-                days_to_earn = ""
-        else:
-            days_to_earn = ""
-
-        macd_state = "CROSSED" if a.get("macd_crossed") else "ALIGNED"
         action = "Options (manual)" if a.get("tier") == 1 else "Shares (auto)"
+        notes_parts = []
+        if a.get("macd_crossed"):
+            notes_parts.append("MACD crossed today")
+        if a.get("weekly_rsi_delta") is not None and abs(a["weekly_rsi_delta"]) >= 5:
+            notes_parts.append("strong weekly momentum")
+        notes = "; ".join(notes_parts) if notes_parts else "entry conditions met"
+
         rows.append([
             run_date, run_time, a.get("ticker", _tk), a.get("order", ""),
             "NEW_ENTRY",
-            _format_signal_date(a.get("signal_date")),
-            a.get("entry_price", ""), a.get("stop_loss", ""),
-            a.get("risk_per_share", ""), a.get("position_size", ""),
-            a.get("shares", ""), a.get("weekly_rsi_delta", ""),
-            a.get("current_rsi", ""), macd_state,
-            earn_date, days_to_earn, a.get("tier", ""),
-            action, "",
+            _fmt_date(a.get("signal_date")),
+            _fmt_price(a.get("entry_price")),
+            _fmt_price(a.get("stop_loss")),
+            _fmt_price(a.get("risk_per_share")),
+            _fmt_price(a.get("position_size")),
+            a.get("shares", ""),
+            _fmt_weekly_delta(a.get("weekly_rsi_delta")),
+            a.get("current_rsi", ""),
+            a.get("macd_state", "crossed" if a.get("macd_crossed") else "aligned"),
+            a.get("next_earnings", ""),
+            a.get("days_to_earnings", "") if a.get("days_to_earnings") is not None else "",
+            a.get("tier", ""),
+            action,
+            notes,
         ])
 
-    # Watching → WATCHING
+    # ── Watching → WATCHING ──
     for _tk, items in result.get("watching", []):
         for w in items:
-            note = "SPY-blocked" if w.get("spy_blocked") else ""
             rows.append([
-                run_date, run_time, _tk, w.get("order", ""), "WATCHING",
-                _format_signal_date(w.get("signal_date")),
-                "", "", "", "", "", "", w.get("current_rsi", ""),
-                "", "", "", "", "", note,
+                run_date, run_time, _tk, w.get("order", ""),
+                "WATCHING",
+                _fmt_date(w.get("signal_date")),
+                "", "", "", "", "",
+                _fmt_weekly_delta(w.get("weekly_rsi_delta")),
+                w.get("current_rsi", ""),
+                w.get("macd_state", ""),
+                w.get("next_earnings", ""),
+                w.get("days_to_earnings") if w.get("days_to_earnings") is not None else "",
+                "", "",
+                w.get("notes", ""),
             ])
 
-    # Open positions → OPEN_POSITION_UPDATE
+    # ── Open positions → OPEN_POSITION_UPDATE ──
     for _tk, o in result.get("open_trades", []):
-        note = "time-exit threshold" if o.get("days_in", 0) >= 10 else ""
         rows.append([
             run_date, run_time, _tk, o.get("order", ""),
             "OPEN_POSITION_UPDATE",
-            _format_signal_date(o.get("entry_date")),
-            o.get("entry_price", ""), o.get("stop_loss", ""),
-            "", "", "", "", o.get("current_rsi", ""),
-            "", "", "", "", "", f"{o.get('days_in', '')}d in trade. {note}".strip(),
+            _fmt_date(o.get("entry_date")),
+            _fmt_price(o.get("entry_price")),
+            _fmt_price(o.get("stop_loss")),
+            "", "", "",
+            _fmt_weekly_delta(o.get("weekly_rsi_delta")),
+            o.get("current_rsi", ""),
+            o.get("macd_state", ""),
+            o.get("next_earnings", ""),
+            o.get("days_to_earnings") if o.get("days_to_earnings") is not None else "",
+            "", "",
+            o.get("notes", ""),
         ])
 
     return rows
