@@ -1,0 +1,49 @@
+name: Daily Scanner
+
+on:
+  schedule:
+    - cron: '0 13 * * *'     # 6:00am PDT / 5:00am PST
+    - cron: '15 20 * * *'    # 1:15pm PDT / 12:15pm PST
+  workflow_dispatch:          # manual trigger from GitHub UI
+
+concurrency:
+  group: daily-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ hashFiles('requirements-ci.txt') }}
+          restore-keys: pip-
+
+      - name: Cache yfinance data
+        uses: actions/cache@v4
+        with:
+          path: strategies/sid_method/cache
+          key: yf-cache-${{ github.run_id }}
+          restore-keys: yf-cache-
+
+      - name: Install dependencies
+        run: pip install -r requirements-ci.txt
+
+      - name: Run daily scanner
+        env:
+          GSHEET_ID: ${{ secrets.GSHEET_ID }}
+          GSHEET_SERVICE_ACCOUNT_JSON: ${{ secrets.GSHEET_SERVICE_ACCOUNT_JSON }}
+        working-directory: strategies/sid_method
+        run: python scripts/ci_daily_scan.py
