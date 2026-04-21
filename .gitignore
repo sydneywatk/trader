@@ -9,3 +9,5 @@ venv/
 *.xlsx
 ibkr_signal_queue.json
 scanner_log.txt
+*-key.json
+*_key.json
