@@ -4,16 +4,19 @@ TRAIN: 2020-01-01 — 2023-12-31
 TEST:  2024-01-01 — today
 """
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve()
+sys.path.insert(0, str(_HERE.parents[3]))  # trader/
+sys.path.insert(0, str(_HERE.parents[1]))  # strategies/sid_method/
 
 import pandas as pd
 from datetime import datetime
 
 from config import WATCHLIST
-from data import fetch_daily, fetch_weekly
-from indicators import add_daily_indicators, add_weekly_rsi
+from shared.data import fetch_daily, fetch_weekly
+from shared.indicators import add_daily_indicators, add_weekly_rsi
 from signals import find_rsi_signals
-from earnings import fetch_earnings_dates
+from shared.earnings import fetch_earnings_dates
 from backtest import run_backtest_for_ticker
 
 

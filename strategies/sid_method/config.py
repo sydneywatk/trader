@@ -1,8 +1,20 @@
-"""Configuration constants for the SID Method Backtester."""
+"""SID Method strategy configuration.
 
-import os
+Re-exports shared platform constants and adds SID-specific settings
+(watchlist, thresholds, risk parameters).
+"""
 
-_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+from shared.config import (  # noqa: F401 — re-exported for SID scripts
+    START_DATE,
+    END_DATE,
+    RSI_PERIOD,
+    MACD_FAST,
+    MACD_SLOW,
+    MACD_SIGNAL,
+    EARNINGS_MIN_DAYS,
+    CACHE_DIR,
+    OUTPUT_DIR,
+)
 
 WATCHLIST = [
     # Top 100 from universe scan (2026-04-15), ranked by WR desc.
@@ -27,31 +39,16 @@ WATCHLIST = [
     "AAPL", "DGX", "DOC", "EQIX",  # ★ | 80.0%, 10 trades (FOX removed — 50% test WR)
 ]
 
-# Backtest date range
-START_DATE = "2020-01-01"
-END_DATE = "today"  # or specific date like "2025-12-31"
-
 # Account and risk settings
 ACCOUNT_SIZE = 100_000
 RISK_PCT = 0.01  # 1%
-
-# Indicator settings
-RSI_PERIOD = 14
-MACD_FAST = 12
-MACD_SLOW = 26
-MACD_SIGNAL = 9
 
 # SID Method thresholds
 RSI_OVERSOLD = 30
 RSI_OVERBOUGHT = 70
 RSI_EXIT = 50
-EARNINGS_MIN_DAYS = 14
 WEEKLY_RSI_MIN_DELTA = 3  # Weekly RSI must move MORE than this many points to qualify as aligned
 MAX_TRADE_DAYS = 10  # Force exit if trade open this many trading days without RSI reaching 50
 
 # Ranking thresholds
 MIN_QUALIFYING_TRADES = 15
-
-# File paths (absolute, resolved from project root)
-CACHE_DIR = os.path.join(_PROJECT_ROOT, "cache")
-OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output")

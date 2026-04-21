@@ -18,13 +18,14 @@ from __future__ import annotations
 import sys, os, json, math, smtplib, ssl
 from datetime import datetime
 from email.mime.text import MIMEText
+from pathlib import Path
 import pandas as pd
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # trader/
 
 try:
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 except ImportError:
     pass
 
@@ -32,15 +33,15 @@ from config import (
     WATCHLIST, ACCOUNT_SIZE, RISK_PCT, RSI_EXIT, MAX_TRADE_DAYS,
     WEEKLY_RSI_MIN_DELTA, EARNINGS_MIN_DAYS, OUTPUT_DIR,
 )
-from data import fetch_daily, fetch_weekly
-from indicators import add_daily_indicators, add_weekly_rsi, _rsi, _macd
+from shared.data import fetch_daily, fetch_weekly
+from shared.indicators import add_daily_indicators, add_weekly_rsi, _rsi, _macd
 from signals import find_rsi_signals
-from earnings import fetch_earnings_dates, next_earnings_date
+from shared.earnings import fetch_earnings_dates, next_earnings_date
 from backtest import (
     run_backtest_for_ticker, _check_entry_conditions, _calc_stop_loss,
     _get_weekly_rsi_on_date,
 )
-import ibkr_data
+from execution import ibkr_data
 
 
 LOOKBACK_DAYS = 10

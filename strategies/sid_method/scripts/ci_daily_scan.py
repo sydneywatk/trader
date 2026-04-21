@@ -16,12 +16,15 @@ import sys
 import os
 import time
 from datetime import datetime
+from pathlib import Path
 
 # Capture flags before overwriting argv
 _original_argv = sys.argv[:]
 dry_run = "--dry-run" in _original_argv
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_HERE = Path(__file__).resolve()
+sys.path.insert(0, str(_HERE.parents[3]))  # trader/
+sys.path.insert(0, str(_HERE.parents[1]))  # strategies/sid_method/ (for daily_scanner, sheets_output)
 
 # Force sheets-only mode for the scanner
 sys.argv = [_original_argv[0], "--sheets-only"]

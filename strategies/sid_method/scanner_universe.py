@@ -21,16 +21,19 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # trader/
+
 # ── Imports from existing codebase ──────────────────────────────────────────
 from config import CACHE_DIR, OUTPUT_DIR
 
 # Override: config.MIN_QUALIFYING_TRADES is 15 but most tickers produce
 # 8-14 trades over 2020-2025. Use 10 for this universe scan.
 MIN_QUALIFYING_TRADES = 10
-from data import fetch_daily, fetch_weekly
-from indicators import add_daily_indicators, add_weekly_rsi
+from shared.data import fetch_daily, fetch_weekly
+from shared.indicators import add_daily_indicators, add_weekly_rsi
 from signals import find_rsi_signals
-from earnings import fetch_earnings_dates
+from shared.earnings import fetch_earnings_dates
 import backtest
 from backtest import run_backtest_for_ticker
 from universe import get_universe, SIDS_LIST, ETF_LIST

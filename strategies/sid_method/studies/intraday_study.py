@@ -19,13 +19,16 @@ import pandas as pd
 import yfinance as yf
 
 # Ensure project imports work
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve()
+sys.path.insert(0, str(_HERE.parents[3]))  # trader/
+sys.path.insert(0, str(_HERE.parents[1]))  # strategies/sid_method/ (for local imports)
 
 from config import ACCOUNT_SIZE, RISK_PCT, RSI_EXIT, MAX_TRADE_DAYS, CACHE_DIR, RSI_PERIOD
-from data import fetch_daily, fetch_weekly
-from indicators import add_daily_indicators, add_weekly_rsi, _rsi
+from shared.data import fetch_daily, fetch_weekly
+from shared.indicators import add_daily_indicators, add_weekly_rsi, _rsi
 from signals import find_rsi_signals
-from earnings import fetch_earnings_dates, next_earnings_date, last_trading_day_before_earnings
+from shared.earnings import fetch_earnings_dates, next_earnings_date, last_trading_day_before_earnings
 from backtest import run_backtest_for_ticker
 
 # Top 20 tickers by WR from universe scan

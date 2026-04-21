@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from config import RSI_PERIOD, MACD_FAST, MACD_SLOW, MACD_SIGNAL
+from shared.config import RSI_PERIOD, MACD_FAST, MACD_SLOW, MACD_SIGNAL
 
 
 def _rsi(series: pd.Series, period: int) -> pd.Series:

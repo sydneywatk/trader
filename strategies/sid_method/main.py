@@ -2,12 +2,15 @@
 
 import sys
 import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # trader/
 
 from config import WATCHLIST
-from data import fetch_daily, fetch_weekly
-from indicators import add_daily_indicators, add_weekly_rsi
+from shared.data import fetch_daily, fetch_weekly
+from shared.indicators import add_daily_indicators, add_weekly_rsi
 from signals import find_rsi_signals
-from earnings import fetch_earnings_dates
+from shared.earnings import fetch_earnings_dates
 from backtest import run_backtest_for_ticker
 from output import generate_excel
 

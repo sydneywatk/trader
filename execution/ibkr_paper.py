@@ -33,13 +33,16 @@ from __future__ import annotations
 
 import os, sys, json, time, threading
 from datetime import datetime
+from pathlib import Path
 from queue import Queue
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_TRADER_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(_TRADER_ROOT))
+sys.path.insert(0, str(_TRADER_ROOT / "strategies" / "sid_method"))  # SID-local imports
 
 try:
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+    load_dotenv(_TRADER_ROOT / ".env")
 except ImportError:
     pass
 
@@ -55,10 +58,10 @@ except ImportError:
 import pandas as pd
 
 from config import OUTPUT_DIR, RSI_EXIT, MAX_TRADE_DAYS
-from data import fetch_daily, fetch_weekly
-from indicators import add_daily_indicators, add_weekly_rsi
+from shared.data import fetch_daily, fetch_weekly
+from shared.indicators import add_daily_indicators, add_weekly_rsi
 from signals import find_rsi_signals
-from earnings import fetch_earnings_dates
+from shared.earnings import fetch_earnings_dates
 from backtest import run_backtest_for_ticker
 
 QUEUE_PATH = os.path.join(OUTPUT_DIR, "ibkr_signal_queue.json")

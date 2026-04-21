@@ -4,7 +4,10 @@ For each pending signal, reports which specific entry condition(s) fail today
 and how close the setup is to triggering.
 """
 import sys, os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pathlib import Path as _Path
+_HERE = _Path(__file__).resolve()
+sys.path.insert(0, str(_HERE.parents[3]))  # trader/
+sys.path.insert(0, str(_HERE.parents[1]))  # strategies/sid_method/
 
 import pandas as pd
 
@@ -12,10 +15,10 @@ from config import (
     WATCHLIST, RSI_EXIT, RSI_OVERSOLD, RSI_OVERBOUGHT,
     WEEKLY_RSI_MIN_DELTA, EARNINGS_MIN_DAYS,
 )
-from data import fetch_daily, fetch_weekly
-from indicators import add_daily_indicators, add_weekly_rsi
+from shared.data import fetch_daily, fetch_weekly
+from shared.indicators import add_daily_indicators, add_weekly_rsi
 from signals import find_rsi_signals
-from earnings import fetch_earnings_dates, next_earnings_date
+from shared.earnings import fetch_earnings_dates, next_earnings_date
 from backtest import run_backtest_for_ticker
 
 LOOKBACK = 10

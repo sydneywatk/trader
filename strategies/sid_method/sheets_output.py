@@ -58,13 +58,16 @@ def _get_sheet_id() -> str:
 
 
 def _ensure_tab(spreadsheet: gspread.Spreadsheet, tab_name: str) -> gspread.Worksheet:
-    """Return the worksheet for tab_name, creating it with headers if needed."""
+    """Return the worksheet for tab_name, creating it with headers if needed.
+    Also adds headers if the tab exists but is empty (e.g. after a clear).
+    Returns (worksheet, needs_header) — caller prepends HEADER to rows if True."""
     try:
         ws = spreadsheet.worksheet(tab_name)
+        needs_header = not ws.get_all_values()
     except gspread.WorksheetNotFound:
         ws = spreadsheet.add_worksheet(title=tab_name, rows=1000, cols=len(HEADER))
-        ws.append_row(HEADER, value_input_option="RAW")
-    return ws
+        needs_header = True
+    return ws, needs_header
 
 
 def _fmt_date(val) -> str:
@@ -142,7 +145,8 @@ def build_rows(result: dict, run_ts: datetime) -> list[list]:
                 w.get("macd_state", ""),
                 w.get("next_earnings", ""),
                 w.get("days_to_earnings") if w.get("days_to_earnings") is not None else "",
-                "", "",
+                "",
+                "Monitor",
                 w.get("notes", ""),
             ])
 
@@ -160,7 +164,8 @@ def build_rows(result: dict, run_ts: datetime) -> list[list]:
             o.get("macd_state", ""),
             o.get("next_earnings", ""),
             o.get("days_to_earnings") if o.get("days_to_earnings") is not None else "",
-            "", "",
+            "",
+            "Manage position",
             o.get("notes", ""),
         ])
 
@@ -187,6 +192,8 @@ def append_signals(result: dict, run_timestamp: datetime) -> int:
         )
 
     tab_name = str(run_timestamp.year)
-    ws = _ensure_tab(spreadsheet, tab_name)
-    ws.append_rows(rows, value_input_option="USER_ENTERED")
-    return len(rows)
+    ws, needs_header = _ensure_tab(spreadsheet, tab_name)
+    if needs_header:
+        rows = [HEADER] + rows
+    ws.append_rows(rows, value_input_option="RAW")
+    return len(rows) - (1 if needs_header else 0)

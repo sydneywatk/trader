@@ -8,12 +8,14 @@
 
 set -euo pipefail
 
-PROJECT_DIR="$HOME/sid_backtester"
+PROJECT_DIR="$HOME/trader"
+STRATEGY_DIR="$PROJECT_DIR/strategies/sid_method"
+EXECUTION_DIR="$PROJECT_DIR/execution"
 PYTHON_BIN="$(command -v python3)"
 LOG_DIR="$PROJECT_DIR/output"
 mkdir -p "$LOG_DIR"
 
-CRON_CMD="30 16 * * 1-5 cd $PROJECT_DIR && $PYTHON_BIN daily_scanner.py && $PYTHON_BIN ibkr_paper.py >> $LOG_DIR/ibkr_log.txt 2>&1"
+CRON_CMD="30 16 * * 1-5 cd $STRATEGY_DIR && $PYTHON_BIN daily_scanner.py && $PYTHON_BIN $EXECUTION_DIR/ibkr_paper.py >> $LOG_DIR/ibkr_log.txt 2>&1"
 MARKER="# SID_SCANNER_CRON"
 
 # Pull current crontab (may be empty)

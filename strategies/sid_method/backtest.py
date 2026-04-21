@@ -10,7 +10,7 @@ from config import (
     ACCOUNT_SIZE, RISK_PCT, RSI_EXIT, RSI_OVERSOLD, RSI_OVERBOUGHT,
     EARNINGS_MIN_DAYS, WEEKLY_RSI_MIN_DELTA, MAX_TRADE_DAYS,
 )
-from earnings import earnings_safe, next_earnings_date, last_trading_day_before_earnings
+from shared.earnings import earnings_safe, next_earnings_date, last_trading_day_before_earnings
 
 
 def _get_weekly_rsi_on_date(weekly_df: pd.DataFrame, date: pd.Timestamp) -> tuple[float, float]:

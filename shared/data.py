@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import yfinance as yf
 
-from config import CACHE_DIR, START_DATE, END_DATE
+from shared.config import CACHE_DIR, START_DATE, END_DATE
 
 
 def _get_end_date() -> str:

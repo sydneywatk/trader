@@ -9,7 +9,7 @@ from typing import Optional
 import pandas as pd
 import yfinance as yf
 
-from config import EARNINGS_MIN_DAYS, CACHE_DIR
+from shared.config import EARNINGS_MIN_DAYS, CACHE_DIR
 
 
 def _earnings_cache_path(ticker: str) -> str:
