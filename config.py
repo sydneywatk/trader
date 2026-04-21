@@ -1,5 +1,9 @@
 """Configuration constants for the SID Method Backtester."""
 
+import os
+
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 WATCHLIST = [
     # Top 100 from universe scan (2026-04-15), ranked by WR desc.
     # GOOG removed (50% WR underperformer). Stars (★) = Sid's original list.
@@ -48,6 +52,6 @@ MAX_TRADE_DAYS = 10  # Force exit if trade open this many trading days without R
 # Ranking thresholds
 MIN_QUALIFYING_TRADES = 15
 
-# File paths
-CACHE_DIR = "./cache"
-OUTPUT_DIR = "./output"
+# File paths (absolute, resolved from project root)
+CACHE_DIR = os.path.join(_PROJECT_ROOT, "cache")
+OUTPUT_DIR = os.path.join(_PROJECT_ROOT, "output")

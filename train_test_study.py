@@ -22,7 +22,8 @@ TRAIN_END   = pd.Timestamp("2023-12-31")
 TEST_START  = pd.Timestamp("2024-01-01")
 TEST_END    = pd.Timestamp(datetime.now().date())
 
-UNIVERSE_FILE = "output/sid_universe_ranked_20260415.xlsx"
+UNIVERSE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "output", "sid_universe_ranked_20260415.xlsx")
 MIN_TRAIN_TRADES = 8
 
 

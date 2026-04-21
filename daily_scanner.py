@@ -255,14 +255,21 @@ def send_email(subject: str, body: str) -> bool:
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 def main():
+    sheets_only = "--sheets-only" in sys.argv
+    test_email = "--test-email" in sys.argv
+
     print("=" * 70)
     print("  SID METHOD — DAILY LIVE SCANNER")
     print(f"  Run: {datetime.now().strftime('%Y-%m-%d %H:%M')}   "
           f"Watchlist: {len(WATCHLIST)} tickers")
 
-    # Data source
-    ib_up = ibkr_data.probe()
-    data_source = "IBKR LIVE" if ib_up else "yfinance (EOD)"
+    # Data source — skip IBKR in sheets-only (CI) mode
+    if sheets_only:
+        ib_up = False
+        data_source = "yfinance (EOD) [sheets-only mode]"
+    else:
+        ib_up = ibkr_data.probe()
+        data_source = "IBKR LIVE" if ib_up else "yfinance (EOD)"
     print(f"  Data source: {data_source}")
     print("=" * 70)
 
@@ -332,15 +339,17 @@ def main():
     total_watching = sum(len(v) for _, v in watching)
     print(f"\n  Watching: {total_watching} pending signals")
 
-    # Queue file for ibkr_paper.py
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    with open(QUEUE_PATH, "w") as f:
-        json.dump(tier2_queue, f, indent=2)
-    print(f"\n  Wrote {len(tier2_queue)} Tier-2 signal(s) to {QUEUE_PATH}")
+    # Queue file for ibkr_paper.py (skip in sheets-only mode)
+    if not sheets_only:
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        with open(QUEUE_PATH, "w") as f:
+            json.dump(tier2_queue, f, indent=2)
+        print(f"\n  Wrote {len(tier2_queue)} Tier-2 signal(s) to {QUEUE_PATH}")
 
-    # Email — send if actionable/open, OR if --test-email flag is passed
-    test_email = "--test-email" in sys.argv
-    if aligned or opens or test_email:
+    # Email — skip entirely in sheets-only mode
+    if sheets_only:
+        print("\n  [email] skipped (--sheets-only mode)")
+    elif aligned or opens or test_email:
         date_str = datetime.now().strftime("%Y-%m-%d")
         if test_email and not aligned and not opens:
             subject = f"SID Scanner [{date_str}] — TEST EMAIL (no live signals)"
@@ -365,6 +374,17 @@ def main():
     print(f"  Summary: {len(aligned)} actionable | {len(opens)} open | "
           f"{total_watching} watching | data: {data_source}")
     print("=" * 70)
+
+    return {
+        "aligned": aligned,
+        "open_trades": opens,
+        "watching": watching,
+        "total_watching": total_watching,
+        "errors": errors,
+        "tickers_scanned": len(WATCHLIST),
+        "data_source": data_source,
+        "regime": regime,
+    }
 
 
 if __name__ == "__main__":
