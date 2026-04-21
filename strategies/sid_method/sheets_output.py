@@ -63,7 +63,8 @@ def _ensure_tab(spreadsheet: gspread.Spreadsheet, tab_name: str) -> gspread.Work
     Returns (worksheet, needs_header) — caller prepends HEADER to rows if True."""
     try:
         ws = spreadsheet.worksheet(tab_name)
-        needs_header = not ws.get_all_values()
+        existing = ws.get_all_values()
+        needs_header = (not existing) or (existing[0] != HEADER)
     except gspread.WorksheetNotFound:
         ws = spreadsheet.add_worksheet(title=tab_name, rows=1000, cols=len(HEADER))
         needs_header = True
@@ -194,6 +195,6 @@ def append_signals(result: dict, run_timestamp: datetime) -> int:
     tab_name = str(run_timestamp.year)
     ws, needs_header = _ensure_tab(spreadsheet, tab_name)
     if needs_header:
-        rows = [HEADER] + rows
+        ws.insert_row(HEADER, index=1, value_input_option="RAW")
     ws.append_rows(rows, value_input_option="RAW")
-    return len(rows) - (1 if needs_header else 0)
+    return len(rows)
