@@ -98,6 +98,46 @@ def _fmt_weekly_delta(val) -> str:
     return f"{v:+.1f} ({direction})"
 
 
+def _compute_risk_fields(entry_price, stop_loss, direction, risk_budget=1000):
+    """Compute risk_per_share, max_shares, position_size from entry/stop.
+
+    Returns (risk_per_share, max_shares, position_size) or (None, None, None).
+    """
+    import math
+    try:
+        ep = float(entry_price)
+        sl = float(stop_loss)
+    except (TypeError, ValueError):
+        return None, None, None
+    if direction == "Long":
+        rps = ep - sl
+    else:
+        rps = sl - ep
+    if rps <= 0:
+        return None, None, None
+    shares = math.floor(risk_budget / rps)
+    if shares <= 0:
+        return None, None, None
+    return round(rps, 2), shares, round(shares * ep, 2)
+
+
+def _get_tier(data: dict) -> str:
+    """Extract tier from a signal dict, or compute from available fields."""
+    tier = data.get("tier")
+    if tier is not None:
+        return str(tier)
+    # Can we infer from macd_crossed / weekly_rsi_delta / signal_rsi?
+    from daily_scanner import classify_tier
+    sig_rsi = data.get("signal_rsi")
+    w_delta = data.get("weekly_rsi_delta")
+    crossed = data.get("macd_crossed", False)
+    earn_days = data.get("days_to_earnings")
+    direction = data.get("order", "")
+    if sig_rsi is not None and w_delta is not None:
+        return str(classify_tier(sig_rsi, w_delta, crossed, earn_days, direction))
+    return ""
+
+
 def build_rows(result: dict, run_ts: datetime) -> list[list]:
     """Build sheet rows from a scanner result dict."""
     run_date = run_ts.strftime("%Y-%m-%d")
@@ -106,7 +146,8 @@ def build_rows(result: dict, run_ts: datetime) -> list[list]:
 
     # ── Actionable setups → NEW_ENTRY ──
     for _tk, a in result.get("aligned", []):
-        action = "Options (manual)" if a.get("tier") == 1 else "Shares (auto)"
+        tier = _get_tier(a)
+        action = "Options (manual)" if tier == "1" else "Shares (auto)"
         notes_parts = []
         if a.get("macd_crossed"):
             notes_parts.append("MACD crossed today")
@@ -114,21 +155,29 @@ def build_rows(result: dict, run_ts: datetime) -> list[list]:
             notes_parts.append("strong weekly momentum")
         notes = "; ".join(notes_parts) if notes_parts else "entry conditions met"
 
+        # Use provided values or compute
+        rps = a.get("risk_per_share")
+        shares = a.get("shares")
+        pos = a.get("position_size")
+        if rps is None or shares is None:
+            rps, shares, pos = _compute_risk_fields(
+                a.get("entry_price"), a.get("stop_loss"), a.get("order", "Long"))
+
         rows.append([
             run_date, run_time, a.get("ticker", _tk), a.get("order", ""),
             "NEW_ENTRY",
             _fmt_date(a.get("signal_date")),
             _fmt_price(a.get("entry_price")),
             _fmt_price(a.get("stop_loss")),
-            _fmt_price(a.get("risk_per_share")),
-            _fmt_price(a.get("position_size")),
-            a.get("shares", ""),
+            _fmt_price(rps),
+            _fmt_price(pos),
+            shares if shares is not None else "",
             _fmt_weekly_delta(a.get("weekly_rsi_delta")),
             a.get("current_rsi", ""),
             a.get("macd_state", "crossed" if a.get("macd_crossed") else "aligned"),
             a.get("next_earnings", ""),
             a.get("days_to_earnings", "") if a.get("days_to_earnings") is not None else "",
-            a.get("tier", ""),
+            tier,
             action,
             notes,
         ])
@@ -153,19 +202,30 @@ def build_rows(result: dict, run_ts: datetime) -> list[list]:
 
     # ── Open positions → OPEN_POSITION_UPDATE ──
     for _tk, o in result.get("open_trades", []):
+        # Use provided values or compute from entry/stop
+        rps = o.get("risk_per_share")
+        shares = o.get("max_shares")
+        pos = o.get("position_size")
+        if rps is None or shares is None:
+            rps, shares, pos = _compute_risk_fields(
+                o.get("entry_price"), o.get("stop_loss"), o.get("order", "Long"))
+        tier = _get_tier(o)
+
         rows.append([
             run_date, run_time, _tk, o.get("order", ""),
             "OPEN_POSITION_UPDATE",
             _fmt_date(o.get("entry_date")),
             _fmt_price(o.get("entry_price")),
             _fmt_price(o.get("stop_loss")),
-            "", "", "",
+            _fmt_price(rps),
+            _fmt_price(pos),
+            shares if shares is not None else "",
             _fmt_weekly_delta(o.get("weekly_rsi_delta")),
             o.get("current_rsi", ""),
             o.get("macd_state", ""),
             o.get("next_earnings", ""),
             o.get("days_to_earnings") if o.get("days_to_earnings") is not None else "",
-            "",
+            tier,
             "Manage position",
             o.get("notes", ""),
         ])

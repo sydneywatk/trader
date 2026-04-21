@@ -204,13 +204,26 @@ def scan_ticker(ticker, spy, ib_session):
                 curr_rsi = round(last_row["RSI"], 1) if pd.notna(last_row["RSI"]) else None
                 stop_rel = "above" if lt["order"] == "Long" and curr_price > lt["stop_loss"] else \
                            "below" if lt["order"] == "Short" and curr_price < lt["stop_loss"] else "at"
+                # Compute tier from backtest trade fields
+                open_tier = classify_tier(
+                    lt.get("signal_rsi", 50),
+                    diag["weekly_rsi_delta"] or 0,
+                    diag["macd_crossed"],
+                    diag["days_to_earnings"],
+                    lt["order"])
                 out["open"] = {
                     "order": lt["order"], "entry_date": lt["entry_date"],
                     "entry_price": lt["entry_price"], "stop_loss": lt["stop_loss"],
+                    "risk_per_share": lt.get("risk_per_share"),
+                    "max_shares": lt.get("max_shares"),
+                    "position_size": lt.get("position_size"),
+                    "tier": open_tier,
                     "current_price": curr_price,
                     "days_in": days_in, "current_rsi": curr_rsi,
                     "weekly_rsi_delta": diag["weekly_rsi_delta"],
                     "macd_state": diag["macd_state"],
+                    "macd_crossed": diag["macd_crossed"],
+                    "signal_rsi": lt.get("signal_rsi"),
                     "next_earnings": diag["next_earnings"],
                     "days_to_earnings": diag["days_to_earnings"],
                     "notes": f"{days_in}d in trade, RSI {curr_rsi}, {stop_rel} stop ${lt['stop_loss']:.2f}",
