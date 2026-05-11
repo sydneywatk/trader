@@ -133,6 +133,7 @@ class SidSweep(QCAlgorithm):
 
     def initialize(self):
         self.set_start_date(2020, 1, 1)
+        self.set_end_date(2026, 4, 30)
         self.set_cash(ACCOUNT_SIZE)
         self.set_benchmark("SPY")
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
@@ -171,6 +172,10 @@ class SidSweep(QCAlgorithm):
             st.macd = self.macd(symbol, self.p_macd_fast, self.p_macd_slow, self.p_macd_sig,
                                 MovingAverageType.EXPONENTIAL, Resolution.DAILY)
             self.symbol_state[symbol] = st
+
+        # Earnings via free EODHD upcoming-earnings dataset (see main file for rationale)
+        self.earnings_by_symbol = {}
+        self.add_universe(EODHDUpcomingEarnings, self._on_earnings_data)
 
         self.set_warm_up(timedelta(days=250))
         self.trade_log = []
@@ -272,10 +277,10 @@ class SidSweep(QCAlgorithm):
         if st.pending_signal_type == "OB" and not spy_short_ok:
             return
 
-        # Earnings filter — uses approximation; see main algorithm comments
+        # Earnings filter — trader rule: reject when 0 <= days_away <= 14
         if self.p_earnings_filter:
             ed = self._earnings(symbol)
-            if ed is not None and 0 <= (ed.date() - self.time.date()).days < 14:
+            if ed is not None and 0 <= (ed.date() - self.time.date()).days <= 14:
                 return
 
         # Enter
@@ -337,18 +342,16 @@ class SidSweep(QCAlgorithm):
               else (st.entry_price - exit_price) * st.shares
         self.trade_log.append({"pnl": pnl, "win": pnl > 0, "reason": reason})
 
+    def _on_earnings_data(self, earnings_data):
+        for d in earnings_data:
+            self.earnings_by_symbol[d.symbol] = d.report_date
+        return [d.symbol for d in earnings_data if d.symbol in self.symbol_state]
+
     def _earnings(self, symbol):
-        try:
-            f = self.securities[symbol].fundamentals
-            er = getattr(f, "earning_reports", None)
-            if er is None:
-                return None
-            fd = getattr(er, "file_date", None)
-            if fd is None or fd.value is None:
-                return None
-            return fd.value + timedelta(days=90)
-        except Exception:
+        d = self.earnings_by_symbol.get(symbol)
+        if d is None or d.date() < self.time.date():
             return None
+        return d
 
     def on_order_event(self, e):
         if e.status != OrderStatus.FILLED:

@@ -34,6 +34,12 @@
 #   - The 2-day RSI reversal exit: explicitly disabled in the trader repo
 #     because it caught oscillations rather than reversals in daily-bar backtests.
 #
+# EARNINGS DATA
+#   Uses QuantConnect's EODHDUpcomingEarnings dataset (free on QC Cloud, daily,
+#   1998-present, ~97% exact-date precision vs Nasdaq). The dataset is consumed
+#   via add_universe; the callback updates a side-effect dict mapping equity
+#   symbol -> next report_date. See _on_earnings_data and _next_earnings_date.
+#
 # =============================================================================
 
 from AlgorithmImports import *
@@ -194,8 +200,10 @@ class SidMethodAlgorithm(QCAlgorithm):
     def initialize(self):
         # -------- Backtest configuration --------
         self.set_start_date(2020, 1, 1)
-        # No set_end_date → runs to today; comment out and add set_end_date(2026, 4, 30)
-        # if you want to match the trader-repo backtest window exactly.
+        # End-date fixed to match the trader-repo's validated backtest window
+        # exactly. Drop this line (or extend it) to run further into the future
+        # as a true out-of-sample check.
+        self.set_end_date(2026, 4, 30)
         self.set_cash(ACCOUNT_SIZE)
         self.set_benchmark("SPY")
 
@@ -222,6 +230,14 @@ class SidMethodAlgorithm(QCAlgorithm):
             state.macd = self.macd(symbol, MACD_FAST, MACD_SLOW, MACD_SIGNAL,
                                    MovingAverageType.EXPONENTIAL, Resolution.DAILY)
             self.symbol_state[symbol] = state
+
+        # -------- Earnings dataset (EODHD Upcoming Earnings, free on QC Cloud) --------
+        # Universe-selection–style alt-data: the callback fires daily with all
+        # currently-known upcoming earnings; we use it for the side-effect of
+        # populating self.earnings_by_symbol. We return only symbols already in
+        # our universe so the selection never expands the equity subscription set.
+        self.earnings_by_symbol = {}  # equity Symbol -> next report_date (datetime)
+        self.add_universe(EODHDUpcomingEarnings, self._on_earnings_data)
 
         # -------- Warm-up --------
         # Need 50 trading days minimum for SMA50; weekly RSI needs ~15 weeks of
@@ -393,11 +409,13 @@ class SidMethodAlgorithm(QCAlgorithm):
             return False
 
         # --- C. Earnings filter ---
+        # Trader-repo rule (shared/earnings.py earnings_safe): days_away > 14 → safe;
+        # so reject when 0 <= days_away <= 14 (i.e. earnings is today or within 14 days).
         if USE_EARNINGS_FILTER:
             earnings_date = self._next_earnings_date(symbol)
             if earnings_date is not None:
                 days_to_earnings = (earnings_date.date() - self.time.date()).days
-                if 0 <= days_to_earnings < EARNINGS_MIN_DAYS:
+                if 0 <= days_to_earnings <= EARNINGS_MIN_DAYS:
                     return False
                 state.next_earnings_date = earnings_date
 
@@ -410,28 +428,27 @@ class SidMethodAlgorithm(QCAlgorithm):
         return True
 
     # -------------------------------------------------------------------------
-    # Earnings date lookup — LEAN exposes upcoming earnings via Fundamentals.
-    # Some symbols / accounts may not have fundamentals available; fall back to
-    # disabled-per-symbol if fetch fails.
+    # EODHD universe-selection callback — populates self.earnings_by_symbol as
+    # a side effect, then returns only symbols already in our equity universe so
+    # the selection itself is a no-op on subscriptions.
+    # -------------------------------------------------------------------------
+    def _on_earnings_data(self, earnings_data):
+        for d in earnings_data:
+            self.earnings_by_symbol[d.symbol] = d.report_date
+        return [d.symbol for d in earnings_data if d.symbol in self.symbol_state]
+
+    # -------------------------------------------------------------------------
+    # Next-earnings lookup using the EODHD data the callback populates.
+    # Returns the next future report_date for the symbol, or None.
     # -------------------------------------------------------------------------
     def _next_earnings_date(self, symbol):
-        try:
-            fundamentals = self.securities[symbol].fundamentals
-            if fundamentals is None:
-                return None
-            er = getattr(fundamentals, "earning_reports", None)
-            if er is None:
-                return None
-            file_date = getattr(er, "file_date", None)
-            if file_date is None or file_date.value is None:
-                return None
-            # Fundamentals.EarningReports.FileDate is the *last* report date; the
-            # next is approximately +90 days (quarterly reporters). This is an
-            # approximation — for high-precision earnings filtering you'd want an
-            # external earnings calendar feed. See QUESTIONS_FOR_SYDNEY.md.
-            return file_date.value + timedelta(days=90)
-        except Exception:
+        d = self.earnings_by_symbol.get(symbol)
+        if d is None:
             return None
+        # Ignore stale entries (report already passed)
+        if d.date() < self.time.date():
+            return None
+        return d
 
     # -------------------------------------------------------------------------
     # Entry execution

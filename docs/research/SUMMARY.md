@@ -55,13 +55,12 @@ If 4 of 6 hold, the port is "mostly validated" and worth paper trading at half s
 
 Sequenced by dependency:
 
-1. **Answer QUESTIONS_FOR_SYDNEY.md #6** (date range — fixed 2026-04-30 or runs to today) before clicking Backtest. Everything else can wait.
-2. **Run `sid_quantconnect.py` once** in a single-shot backtest. Read the trade log and the QC stats panel. Map results to the table above.
-3. **If WR < 65%**: run the parameter sweep on a narrow single-axis grid (e.g., RSI threshold 25/28/30/32/35 holding everything else constant) to see whether the trader-repo's specific parameter choices were load-bearing.
-4. **If WR ≥ 65%**: skip the sweep for now and proceed to ablation. Toggle `USE_SPY_FILTER = False` and rerun; toggle `USE_EARNINGS_FILTER = False` and rerun. Each ablation tells you how much each filter is worth. This is the novel contribution called out in Phase 2.
-5. **Run the ADF universe screen** (Phase 2 bonus 2) as a follow-up project. Compare WR on ADF-screened universe vs current 99-ticker universe. The delta tells you how much of the edge is universe-driven vs strategy-driven.
-6. **Decision gate to paper trade**: validation criteria met → proceed to IBKR paper trading via the existing `execution/ibkr_paper.py`. Validation failed → loop back to universe reconstruction.
-7. **(Stretch)** Public-facing write-up of (a) the first published SID port to QC, (b) the per-filter ablation results, (c) the ADF screen result. This would be a genuinely additive contribution to the QC community — there's no prior art.
+1. **Paste `sid_quantconnect.py` into a new QC Python project** and click Backtest. All blocking questions have been resolved (2026-05-11): end-date is `2026-04-30` and earnings come from the free EODHD dataset. Read the trade log and the QC stats panel; map results to the table above.
+2. **If WR < 65%**: run the parameter sweep on a narrow single-axis grid (e.g., RSI threshold 25/28/30/32/35 holding everything else constant) to see whether the trader-repo's specific parameter choices were load-bearing.
+3. **If WR ≥ 65%**: skip the sweep for now and proceed to ablation. Toggle `USE_SPY_FILTER = False` and rerun; toggle `USE_EARNINGS_FILTER = False` and rerun. Each ablation tells you how much each filter is worth. This is the novel contribution called out in Phase 2.
+4. **Run the ADF universe screen** (Phase 2 bonus 2) as a follow-up project. Compare WR on ADF-screened universe vs current 99-ticker universe. The delta tells you how much of the edge is universe-driven vs strategy-driven.
+5. **Decision gate to paper trade**: validation criteria met → proceed to IBKR paper trading via the existing `execution/ibkr_paper.py`. Validation failed → loop back to universe reconstruction.
+6. **(Stretch)** Public-facing write-up of (a) the first published SID port to QC, (b) the per-filter ablation results, (c) the ADF screen result. This would be a genuinely additive contribution to the QC community — there's no prior art.
 
 ## Files delivered on this branch
 

@@ -2,6 +2,22 @@
 
 These came up during the port. Most are flagged-and-shipped (i.e. the port made a choice; you may want to revisit) rather than hard blockers. Marked **[BLOCKING]** if I need an answer before the QC results are interpretable.
 
+## Resolution status (2026-05-11)
+
+| # | Topic | Decision | Code change? |
+|---|---|---|---|
+| 1 | Reversal patterns | Leave out. Trader-repo is source of truth. | No |
+| 2 | MACD histogram fallback | Ship strict; revisit if trade count low | No |
+| 3 | Earnings filter | **Use free EODHDUpcomingEarnings dataset** | **Yes** |
+| 4 | Weekly RSI tracker | Skip unit test; trust backtest | No |
+| 5 | snake_case vs PascalCase | Acknowledged | No |
+| 6 | Date range | **Fixed end-date 2026-04-30** | **Yes** |
+| 7 | Kelly sizing | Existing comment is fine | No |
+| 8 | Universe size | Ship 99-ticker; expand as follow-up | No |
+| 9 | Slippage / commission | Default IBKR model | No |
+
+Per-question detail below preserved for posterity.
+
 ---
 
 ## 1. Reversal-pattern confirmation step (Step 3 in your prompt)
@@ -15,6 +31,8 @@ The port matches the **code**, not the documented method.
 **Question:** Was the reversal-pattern step intentionally dropped, or is it a missing implementation? If the latter, do you want me to (a) leave it for a follow-up, (b) add a simple double-top/bottom detector to the port, or (c) hold the QC port until pattern detection is in the trader code first?
 
 **My recommendation:** (a) leave it. Pattern detection is hard to do well from price alone and would add a new error source while we're trying to validate the *existing* logic. After the QC port establishes a baseline, adding patterns is a clean +ablation.
+
+**Resolution:** Approved (a). No code change.
 
 ---
 
@@ -37,6 +55,8 @@ The QC port keeps no bar-over-bar histogram window, so it uses only `macd_line >
 
 **My recommendation:** ship the strict version for the first run, then add the histogram fallback as a follow-up if trade count is low.
 
+**Resolution:** Approved. Strict version shipped. Add fallback if QC trade count comes in materially below 739.
+
 ---
 
 ## 3. Earnings filter — `next_earnings_date` approximation
@@ -49,6 +69,14 @@ The trader code uses `shared/earnings.py` which fetches per-ticker earnings date
 - (c) Ship the trader-repo earnings cache (`cache/*_earnings.json`) into QC as an `add_data` custom dataset.
 
 **My recommendation:** (a) for the first run. If the QC WR comes in low, check the trade log to see how many trades happen in the 14-day pre-earnings window (which the trader code would have filtered); if it's >5% of trades, escalate to (c).
+
+**Resolution:** Recommendation REJECTED. Use QuantConnect's free `EODHDUpcomingEarnings` dataset instead (1998+, daily, 97% exact-date precision per the QC data catalog). Match `shared/earnings.py`'s window exactly.
+
+**Implemented changes:**
+- Added `self.add_universe(EODHDUpcomingEarnings, self._on_earnings_data)` to the main algorithm and the sweep harness.
+- The callback populates a side-effect dict `self.earnings_by_symbol[equity_symbol] = report_date`, and returns only already-subscribed symbols so the universe selection is a no-op on subscriptions.
+- `_next_earnings_date(symbol)` now reads from the dict, ignoring stale entries (`report_date < self.time.date()`).
+- **Off-by-one fix discovered while implementing this:** the trader-repo rule (`shared/earnings.py:91-94`) is `days_away > 14 → safe`, meaning reject when `0 <= days_away <= 14`. The original port used `< EARNINGS_MIN_DAYS`, which would have failed to reject day-14 entries. Corrected in both files.
 
 ---
 
@@ -64,6 +92,8 @@ The port works around this with a custom `WeeklyRsiTracker` class that maintains
 
 **My recommendation:** Run the QC backtest first. If trade count is within ~10% of the trader-repo's 739 trades, the tracker is fine. If it's off by a lot, write the test.
 
+**Resolution:** Approved. No code change.
+
 ---
 
 ## 5. Snake_case vs PascalCase LEAN API
@@ -71,6 +101,8 @@ The port works around this with a custom `WeeklyRsiTracker` class that maintains
 I used the modern lowercase API (`self.set_start_date`, `self.add_equity`, `self.rsi`, `self.set_brokerage_model`, etc.). QC has been migrating to snake_case for Python in the last year. The legacy PascalCase methods (`SetStartDate`, `AddEquity`, etc.) still work but show deprecation warnings in newer LEAN versions.
 
 **Not a question, just a heads-up:** if you find the QC IDE shows deprecation warnings or errors, swap to PascalCase. Both files use the lowercase style consistently — a global find-and-replace can flip it.
+
+**Resolution:** Acknowledged. No code change.
 
 ---
 
@@ -84,15 +116,7 @@ Trader repo uses `START_DATE = "2020-01-01"`, `END_DATE = "today"`. The port mat
 
 **My recommendation:** fixed end-date 2026-04-30 for the apples-to-apples comparison. Then a separate run with no end-date to capture May-onward as a true out-of-sample window.
 
-To switch, change line:
-```python
-# No set_end_date → runs to today
-```
-to:
-```python
-self.set_end_date(2026, 4, 30)
-```
-in `sid_quantconnect.py` `initialize`.
+**Resolution:** Approved. `self.set_end_date(2026, 4, 30)` added to both `sid_quantconnect.py` and `sid_parameter_sweep.py`.
 
 ---
 
@@ -103,6 +127,8 @@ The port has `USE_KELLY_SIZING = False` by default. If enabled, it sizes positio
 **Question:** the 0.71 WR is Naiman's documented student-trade number, not your own calibration. After the first QC backtest, the *measured* WR + average R should be plugged in before enabling Kelly. Want me to add a comment to that effect in code, or are you fine treating this as "obviously needs calibration before flipping"?
 
 **My recommendation:** the comment is already in code (line ~415 of `sid_quantconnect.py`). No action needed unless you want it louder.
+
+**Resolution:** Approved. No code change.
 
 ---
 
@@ -116,6 +142,8 @@ The port uses the 99-ticker `WATCHLIST` from `strategies/sid_method/config.py` e
 
 **My recommendation:** ship the 99-ticker version first. If WR comes in healthy, the S&P 500 extension is a high-value follow-up; if WR is low, the universe expansion isn't worth doing until selection bias is addressed.
 
+**Resolution:** Approved. No code change.
+
 ---
 
 ## 9. Slippage / commission tuning
@@ -126,8 +154,10 @@ The port uses `BrokerageModel.INTERACTIVE_BROKERS_BROKERAGE`. LEAN's IBKR model 
 
 **No question — just verifying you're OK with QC's default IBKR model.** It's slightly more pessimistic than real IBKR fills (real IBKR Pro is usually $0.0035/share with smaller minimums), so the backtest is mildly conservative on PnL. Good for the validation goal; suboptimal if you later use the QC results for return projection.
 
+**Resolution:** Approved. No code change.
+
 ---
 
 ## Summary
 
-The only **[BLOCKING]** item is #6 (date range). All others are flagged-and-shipped; the port is internally consistent and faithful to the trader-repo code on every point that matters. Run the QC backtest, then we can revisit any items above where the results suggest they matter.
+All 9 items resolved (2026-05-11). Items #3 (earnings dataset) and #6 (date range) drove real code changes in both QC files; the other 7 are confirmed flag-and-ship choices. The port is now ready to paste into QC.
