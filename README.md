@@ -9,6 +9,10 @@ pipeline.
 and automation engine** — it coded the method in Python and built a one-command
 deploy. Stack: **Python · QuantConnect/LEAN · GitHub · Claude Code**.
 
+> 📄 **Start here:** the [**project writeup**](docs/SID_METHOD_PROJECT.md) (the full
+> story — thesis, method, honest results) and the
+> [**one-pager**](docs/onepager/sid_onepager.pdf) (one-page summary).
+
 - **Universe:** the trader's own **~100-ticker watchlist** (~50/50 stocks/ETFs;
   92 names compiled from his published lists), plus a **survivorship-free**
   universe used as an honesty benchmark.
@@ -63,9 +67,8 @@ Files:
 
 ```
 quantconnect/
-├── sid_quantconnect_experiments.py   parameterized harness (universe / exit / filters / side / date override)
-├── sid_quantconnect_dynamic.py       broad survivorship-free stress test
-├── sid_quantconnect.py               faithful fixed-watchlist port
+├── sid_quantconnect_experiments.py   parameterized algorithm — one compile drives
+│                                     every variant (universe / exit / filters / side / dates)
 └── deploy.py                         one-command push → compile → backtest → stats
 ```
 
@@ -91,13 +94,12 @@ compile only.
 
 ## Tests
 
-The deterministic strategy math is unit-tested (`tests/`, 33 tests, run in CI via
+The deterministic strategy math is unit-tested (`tests/`, 26 tests, run in CI via
 [`.github/workflows/tests.yml`](.github/workflows/tests.yml)):
 
 - `test_indicators.py` — RSI / MACD / SMA: invariants (RSI bounded [0,100],
   all-gains→100, warmup NaN, histogram ≡ line − signal) plus characterization
   locks on a fixed price vector, so a formula change trips a test.
-- `test_signals.py` — the RSI 30/70 crossing logic (exact entry-signal semantics).
 - `test_earnings.py` — the pure earnings-date helpers (the > 14-day rule).
 
 ```
@@ -112,22 +114,20 @@ empirically on QuantConnect against the author's own logged trades.
 
 ```
 trader/
-├── quantconnect/        # ← the pipeline this project showcases (see above)
-├── shared/              # reusable engine: indicators, earnings, data, config
-├── tests/               # unit tests for the deterministic math (CI)
-├── docs/                # project writeup, decision log, research, one-pager + graphic
-├── strategies/          # local Python engines (SID + two research strategies)
-└── execution/           # IBKR broker adapters (local engine only)
+├── quantconnect/        # the pipeline this repo showcases
+│   ├── sid_quantconnect_experiments.py   parameterized algorithm (universe / exit / filters / side / dates)
+│   └── deploy.py                          one-command push → compile → backtest → stats
+├── shared/              # the indicator/earnings/config math the tests lock down
+├── tests/               # unit tests for that math (CI)
+└── docs/                # project writeup, decision log, research, one-pager + graphic
 ```
 
-> **A note on scope.** This README covers the **QuantConnect** pipeline — the
-> faithful port, the survivorship-free validation, and the deploy. The repo also
-> contains an earlier **local** Python engine (a daily EOD scanner with email
-> alerts and optional **IBKR** paper execution) and two other research
-> strategies; those are a separate track and are documented in
-> [`strategies/sid_method/README.md`](strategies/sid_method/README.md). IBKR is
-> **not** part of the QuantConnect pipeline — QuantConnect handles execution
-> natively.
+> **A note on scope.** This repo is the **QuantConnect** pipeline — the faithful
+> port, the survivorship-free validation, and the one-command deploy. The
+> **local** track — a daily EOD scanner with email alerts and **IBKR** paper
+> execution, plus two other research strategies — lives in a separate repo,
+> [`ibkr-trader`](https://github.com/sydneywatk/ibkr-trader). IBKR is **not**
+> part of this pipeline; QuantConnect handles execution natively.
 
 ## Setup
 
@@ -144,5 +144,6 @@ documented in the local README.
 
 - Shared modules use `from shared.X import ...`; QuantConnect code is self-contained
   and PEP8 (snake_case) per the QC LEAN API.
-- Strategy-local modules use bare imports; each runnable script adds the repo root
-  to `sys.path` so absolute imports resolve when invoked directly.
+- The QuantConnect algorithm inlines its constants (it runs in the QC cloud, which
+  can't import the local package); `shared/` exists as the reference math the unit
+  tests lock down, mirroring the port.

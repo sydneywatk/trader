@@ -46,10 +46,10 @@ sector/index ETFs and leveraged/inverse ETFs (TQQQ, SQQQ, TNA, TZA, DUST, NUGT�
 
 | Layer | Tool |
 |---|---|
-| Signal + backtest engine | **Python** (local `strategies/sid_method/`) + **QuantConnect/LEAN** (cloud, realistic IBKR fills) |
+| Signal + backtest engine | **QuantConnect/LEAN** (cloud, realistic IBKR fill model); a local Python engine lives in the companion `ibkr-trader` repo |
 | Iteration / build loop | **Claude Code** (research, implement, ablate, train/test, re-validate) |
-| Version control / docs | **GitHub** (`github.com/sydneywatk/trader`, branch `quantconnect-port`) |
-| Execution (planned) | **QuantConnect paper** → later **IBKR**; options overlay after shares |
+| Version control / docs | **GitHub** — QuantConnect pipeline in [`trader`](https://github.com/sydneywatk/trader); local/IBKR engine split out to [`ibkr-trader`](https://github.com/sydneywatk/ibkr-trader) |
+| Execution (planned) | **QuantConnect paper** → later live; options overlay after shares |
 
 ## 5. What we've done ✅
 
@@ -57,25 +57,26 @@ sector/index ETFs and leveraged/inverse ETFs (TQQQ, SQQQ, TNA, TZA, DUST, NUGT�
 - [x] **Parameterized QuantConnect harness** (`quantconnect/sid_quantconnect_experiments.py`) — one compile drives every test (universe / exit / filters / side / single-ticker + date override).
 - [x] **Survivorship-free universe** rebuilt from point-in-time ETF holdings; split-adjusted prices to match TradingView.
 - [x] **Train (2020–23) / test (2024–26) holdout** discipline.
-- [x] **Engine validated against his real trades** — reproduced 14/18 of a student's logged IWM trades; his DIS example to the day.
-- [x] **GitHub updated** — code, honest README, pipeline graphic (`docs/pipeline/`).
+- [x] **Engine cross-checked against his real trades** — reproduces his DIS example to the day; more of his logged trades to validate next.
+- [x] **GitHub** — code, honest README, pipeline graphic + one-pager (`docs/`).
 
 ## 6. Target & current status
 
-- **Target: ~76% win rate** — the rate his students report on shares. That's the
-  bar the automated pipeline aims to reproduce on his ~100-ticker watchlist.
-- **Current (automated, faithful):** on his watchlist, both sides, taking every
-  signal mechanically → **~55% WR at ~25 trades/month** (cadence matches his).
-  The gap to 76% is the **discretion** he applies by hand — one "top pick" per
-  day, chart-pattern confirmation, early exits — plus small, self-logged student
-  samples. (Longs-only is higher win-rate but fewer trades; the trailing-exit
-  variant is positive out-of-sample but isn't his faithful method.) Closing the
-  gap is the WIP.
-- **Engine is faithful** — validated against his own logged trades (14/18 IWM,
-  DIS to the day), so the gap is selection/discretion, not a coding error.
-- **Honesty benchmark:** re-running on a survivorship-free universe separates
-  "the method" from "the names" — useful for knowing how much edge is real before
-  risking capital.
+- **Target: ~76% win rate** — the rate he reports on shares; the bar the automated
+  pipeline aims to reproduce on his ~100-ticker watchlist.
+- **Current (automated, faithful):** his watchlist, both sides, every signal taken
+  mechanically → **~55–58% WR at ~25 trades/month** (cadence matches his). The gap
+  to 76% is the **discretion** he applies by hand — one daily "top pick," chart
+  confirmation, early exits — not a coding error (the engine reproduces his trades).
+- **Key finding — the short side has no edge.** On the survivorship-free universe,
+  flipping the identical strategy from long-only to both-sides drops it from
+  **+70.5% to −16.0%** (max drawdown 12% → 40%, Sharpe 0.30 → −0.21). Shorting
+  overbought equities has negative expectancy — a documented mean-reversion
+  asymmetry — so the **deployable config is long-only**. A finding, not a filter.
+- **Headline (deployable: long-only, survivorship-free, 2020–2026):** Net **+70.5%**,
+  CAGR 8.8%, max DD 12.4%, Sharpe 0.30 — and +4.5% in the 2022 bear vs SPY −18%.
+- **Honesty benchmark:** the survivorship-free universe separates "the method" from
+  "the names" — how much edge is real before risking capital.
 - His **real returns come from an options overlay** (selling puts / buying calls),
   which a shares backtest can't capture — hence Phase 2.
 
@@ -98,9 +99,13 @@ sector/index ETFs and leveraged/inverse ETFs (TQQQ, SQQQ, TNA, TZA, DUST, NUGT�
 - **Universe — decided:** trade **his ~100 tickers only** (`universe=watchlist`,
   the 92-ticker list). The survivorship-free universe stays as the honesty
   benchmark, not the live config.
-- **Side & exit — decided:** both sides, his RSI-50 exit (this is what produces
-  the ~20–30 trades/month and matches his method). The trailing-exit variant is
-  kept as a documented economics improvement, not the faithful config.
+- **Side — decided:** the **deployable** config is **long-only** — testing both
+  sides showed the short leg has negative expectancy (−16% vs +70% on the same
+  universe). The faithful both-sides run is kept for fidelity/cadence checks, not
+  for deployment.
+- **Exit — open:** his RSI-50 take-profit is faithful and sets the ~25 trades/month
+  cadence; the ATR trailing exit has better out-of-sample economics and is the
+  current deployable choice.
 - **Open — paper-trade venue:** QuantConnect paper brokerage (no credentials,
   ~$24/mo node) — node caps at 10 assets, so either run a ~10-ETF subset, pay for
   a bigger node, or do signals-only first.
@@ -109,10 +114,15 @@ sector/index ETFs and leveraged/inverse ETFs (TQQQ, SQQQ, TNA, TZA, DUST, NUGT�
 ## 9. Repo map
 
 ```
-quantconnect/sid_quantconnect_experiments.py   # main parameterized harness
-quantconnect/sid_quantconnect_dynamic.py       # broad survivorship-free stress test
-quantconnect/sid_quantconnect.py               # faithful fixed-watchlist port
-strategies/sid_method/                          # local Python engine + daily scanner
-docs/pipeline/sid_method_pipeline.{html,pdf}    # pipeline graphic
-docs/SID_METHOD_PROJECT.md                       # this document
+This repo (trader) — QuantConnect pipeline:
+  quantconnect/sid_quantconnect_experiments.py   # the parameterized algorithm
+  quantconnect/deploy.py                          # one-command deploy
+  shared/                                         # reference math the unit tests lock down
+  tests/                                          # unit tests (CI)
+  docs/onepager/  ·  docs/pipeline/               # one-pager + pipeline graphic
+  docs/SID_METHOD_PROJECT.md                      # this document
+
+Companion repo (ibkr-trader) — local engine:
+  strategies/sid_method/   # local Python engine + daily scanner
+  execution/               # IBKR paper/live adapter
 ```

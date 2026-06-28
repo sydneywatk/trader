@@ -1,0 +1,136 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  @page { size: 8.5in 11in; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html,body { width: 8.5in; }
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #16202c; background: #fff;
+    padding: 0.62in 0.66in 0.5in;
+    -webkit-font-smoothing: antialiased;
+  }
+  .eyebrow { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+    color: #6b7a8d; font-weight: 700; }
+  h1 { font-size: 25px; line-height: 1.16; letter-spacing: -.012em;
+    margin: 7px 0 6px; font-weight: 800; }
+  .sub { font-size: 12.5px; color: #44515f; line-height: 1.5; max-width: 7.1in; }
+  .sub b { color: #16202c; font-weight: 700; }
+  .rule { height: 2px; background: #16202c; margin: 13px 0 0; }
+  .row { display: flex; gap: 16px; }
+  .stat { flex: 1; padding: 11px 0 9px; border-bottom: 1px solid #e6eaef; }
+  .stat .k { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .stat .l { font-size: 9.5px; color: #6b7a8d; text-transform: uppercase;
+    letter-spacing: .07em; font-weight: 600; margin-top: 2px; }
+  .green { color: #1a7f4b; }
+  .sec { font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: #16202c; font-weight: 800; margin: 18px 0 8px; }
+  .chartwrap { border: 1px solid #e6eaef; border-radius: 7px; padding: 10px 12px 6px; }
+  .chart-cap { display:flex; justify-content:space-between; align-items:baseline;
+    font-size: 11px; color:#6b7a8d; margin: 2px 2px 4px; }
+  .chart-cap b { color:#16202c; font-size: 12px; }
+  svg { display:block; width: 100%; height: auto; }
+  .grid { stroke: #eef1f4; stroke-width: 1; }
+  .ytick { fill:#8a97a6; font-size: 10px; text-anchor: end; }
+  .xtick { fill:#8a97a6; font-size: 10px; text-anchor: middle; }
+  .eqline { fill:none; stroke:#16202c; stroke-width: 2; stroke-linejoin: round; }
+  .eqarea { fill: rgba(22,32,44,.06); stroke:none; }
+  .cols { display:flex; gap: 22px; }
+  .col { flex: 1; }
+  .col h4 { font-size: 12px; font-weight: 800; margin: 0 0 5px; }
+  .col p, .col li { font-size: 11.3px; color:#44515f; line-height: 1.5; }
+  .col ul { list-style: none; }
+  .col li { position: relative; padding-left: 14px; margin-bottom: 4px; }
+  .col li:before { content:""; position:absolute; left:0; top:7px; width:5px;
+    height:5px; background:#16202c; border-radius:50%; }
+  .note { font-size: 10.5px; color:#7a8694; line-height:1.5; margin-top: 4px; }
+  .footer { margin-top: 17px; padding-top: 11px; border-top: 2px solid #16202c;
+    display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
+  .footer .lead { font-size: 12px; color:#16202c; line-height:1.5; max-width: 5.4in; }
+  .footer .lead b { font-weight: 800; }
+  .footer .meta { font-size: 10px; color:#8a97a6; text-align:right; line-height:1.6;
+    white-space:nowrap; }
+  .stack { font-size: 10.5px; color:#6b7a8d; margin-top: 3px; font-weight:600;
+    letter-spacing:.02em; }
+</style></head><body>
+
+  <div class="eyebrow">Algorithmic Trading · Work in Progress</div>
+  <h1>Automating a discretionary swing-trading method</h1>
+  <div class="sub">A hand-traded RSI/MACD mean-reversion method (the &ldquo;SID
+    Method,&rdquo; reported at a <b>~76% win rate</b>) ported to code and validated
+    honestly. <b>I own the strategy, the test design, and every judgment call;
+    I use Claude Code as the implementation &amp; automation engine</b> &mdash;
+    it wrote the Python and built a one-command deploy pipeline.
+    <span class="stack">Python · QuantConnect/LEAN · GitHub · Claude Code</span>
+  </div>
+  <div class="rule"></div>
+
+  <div class="row">
+    <div class="stat"><div class="k green">+70.5%</div><div class="l">Net return, 6.3 yrs</div></div>
+    <div class="stat"><div class="k">8.8%</div><div class="l">CAGR</div></div>
+    <div class="stat"><div class="k">12.4%</div><div class="l">Max drawdown</div></div>
+    <div class="stat"><div class="k">0.30</div><div class="l">Sharpe</div></div>
+    <div class="stat"><div class="k green">+4.5%</div><div class="l">2022 vs SPY &minus;18%</div></div>
+  </div>
+
+  <div class="sec">Equity curve &mdash; honesty benchmark (survivorship-free)</div>
+  <div class="chartwrap">
+    <div class="chart-cap">
+      <span><b>Survivorship-free universe</b> · longs-only · trailing exit · 1% risk/trade</span>
+      <span>2020 &ndash; 2026 · QuantConnect/LEAN · realistic IBKR fills</span>
+    </div>
+    <svg viewBox="0 0 1040 300" preserveAspectRatio="xMidYMid meet">
+      <line class="grid" x1="64" y1="237.5" x2="1016" y2="237.5"/><text class="ytick" x="54" y="241.5">$100k</text><line class="grid" x1="64" y1="166.4" x2="1016" y2="166.4"/><text class="ytick" x="54" y="170.4">$125k</text><line class="grid" x1="64" y1="95.2" x2="1016" y2="95.2"/><text class="ytick" x="54" y="99.2">$150k</text><line class="grid" x1="64" y1="24.0" x2="1016" y2="24.0"/><text class="ytick" x="54" y="28.0">$175k</text>
+      <line class="grid" x1="64.0" y1="24" x2="64.0" y2="266"/><text class="xtick" x="64.0" y="288.0">2020</text><line class="grid" x1="214.9" y1="24" x2="214.9" y2="266"/><text class="xtick" x="214.9" y="288.0">2021</text><line class="grid" x1="365.4" y1="24" x2="365.4" y2="266"/><text class="xtick" x="365.4" y="288.0">2022</text><line class="grid" x1="515.9" y1="24" x2="515.9" y2="266"/><text class="xtick" x="515.9" y="288.0">2023</text><line class="grid" x1="666.4" y1="24" x2="666.4" y2="266"/><text class="xtick" x="666.4" y="288.0">2024</text><line class="grid" x1="817.3" y1="24" x2="817.3" y2="266"/><text class="xtick" x="817.3" y="288.0">2025</text><line class="grid" x1="967.8" y1="24" x2="967.8" y2="266"/><text class="xtick" x="967.8" y="288.0">2026</text>
+      <path class="eqarea" d="M 64.0,266.0 L 64.0,237.5 L 69.5,237.5 L 75.1,239.3 L 80.6,244.2 L 86.1,243.9 L 91.7,256.9 L 97.2,257.7 L 102.7,257.7 L 108.3,257.7 L 113.8,256.4 L 119.3,257.1 L 124.9,251.0 L 130.4,250.0 L 136.0,249.9 L 141.5,250.0 L 147.0,248.5 L 152.6,248.5 L 158.1,248.5 L 163.6,249.1 L 169.2,253.4 L 174.7,251.2 L 180.2,239.9 L 185.8,248.5 L 191.3,245.0 L 196.8,232.4 L 202.4,235.3 L 207.9,233.5 L 213.4,233.1 L 219.0,237.9 L 224.5,239.1 L 230.0,238.8 L 235.6,241.7 L 241.1,242.6 L 246.7,240.0 L 252.2,230.1 L 257.7,221.0 L 263.3,217.4 L 268.8,219.9 L 274.3,218.9 L 279.9,216.6 L 285.4,208.5 L 290.9,206.8 L 296.5,208.4 L 302.0,214.8 L 307.5,214.4 L 313.1,221.7 L 318.6,215.0 L 324.1,215.9 L 329.7,205.7 L 335.2,197.2 L 340.7,197.2 L 346.3,195.2 L 351.8,198.7 L 357.3,201.4 L 362.9,194.1 L 368.4,183.0 L 374.0,215.7 L 379.5,216.1 L 385.0,216.1 L 390.6,216.1 L 396.1,216.1 L 401.6,195.0 L 407.2,209.6 L 412.7,213.5 L 418.2,220.5 L 423.8,220.6 L 429.3,220.6 L 434.8,220.6 L 440.4,220.6 L 445.9,220.6 L 451.4,191.2 L 457.0,186.0 L 462.5,189.6 L 468.0,194.9 L 473.6,202.6 L 479.1,202.3 L 484.7,202.3 L 490.2,202.3 L 495.7,174.7 L 501.3,181.5 L 506.8,187.7 L 512.3,190.1 L 517.9,189.7 L 523.4,186.0 L 528.9,171.6 L 534.5,177.0 L 540.0,179.3 L 545.5,190.0 L 551.1,194.0 L 556.6,201.3 L 562.1,186.0 L 567.7,193.4 L 573.2,188.0 L 578.7,176.8 L 584.3,164.1 L 589.8,166.0 L 595.3,164.2 L 600.9,162.9 L 606.4,162.9 L 612.0,162.9 L 617.5,157.6 L 623.0,176.1 L 628.6,185.6 L 634.1,185.9 L 639.6,185.9 L 645.2,195.9 L 650.7,175.4 L 656.2,175.9 L 661.8,172.6 L 667.3,168.1 L 672.8,167.1 L 678.4,168.0 L 683.9,162.9 L 689.4,170.5 L 695.0,168.0 L 700.5,169.0 L 706.0,172.6 L 711.6,176.3 L 717.1,174.5 L 722.7,159.1 L 728.2,167.6 L 733.7,157.4 L 739.3,152.2 L 744.8,155.8 L 750.3,153.4 L 755.9,154.7 L 761.4,150.4 L 766.9,150.8 L 772.5,152.5 L 778.0,139.7 L 783.5,135.8 L 789.1,141.2 L 794.6,141.1 L 800.1,154.2 L 805.7,131.3 L 811.2,139.7 L 816.7,142.2 L 822.3,134.0 L 827.8,103.9 L 833.3,104.3 L 838.9,100.8 L 844.4,105.4 L 850.0,105.8 L 855.5,105.8 L 861.0,105.8 L 866.6,105.8 L 872.1,106.1 L 877.6,123.1 L 883.2,124.3 L 888.7,124.4 L 894.2,120.6 L 899.8,129.4 L 905.3,132.8 L 910.8,119.7 L 916.4,105.8 L 921.9,111.5 L 927.4,111.4 L 933.0,106.2 L 938.5,97.0 L 944.0,114.0 L 949.6,112.5 L 955.1,111.8 L 960.7,77.2 L 966.2,76.1 L 971.7,78.9 L 977.3,74.6 L 982.8,77.5 L 988.3,80.0 L 993.9,47.1 L 999.4,64.7 L 1004.9,65.3 L 1010.5,51.4 L 1016.0,35.4 L 1016.0,266.0 Z"/>
+      <path class="eqline" d="M 64.0,237.5 L 69.5,237.5 L 75.1,239.3 L 80.6,244.2 L 86.1,243.9 L 91.7,256.9 L 97.2,257.7 L 102.7,257.7 L 108.3,257.7 L 113.8,256.4 L 119.3,257.1 L 124.9,251.0 L 130.4,250.0 L 136.0,249.9 L 141.5,250.0 L 147.0,248.5 L 152.6,248.5 L 158.1,248.5 L 163.6,249.1 L 169.2,253.4 L 174.7,251.2 L 180.2,239.9 L 185.8,248.5 L 191.3,245.0 L 196.8,232.4 L 202.4,235.3 L 207.9,233.5 L 213.4,233.1 L 219.0,237.9 L 224.5,239.1 L 230.0,238.8 L 235.6,241.7 L 241.1,242.6 L 246.7,240.0 L 252.2,230.1 L 257.7,221.0 L 263.3,217.4 L 268.8,219.9 L 274.3,218.9 L 279.9,216.6 L 285.4,208.5 L 290.9,206.8 L 296.5,208.4 L 302.0,214.8 L 307.5,214.4 L 313.1,221.7 L 318.6,215.0 L 324.1,215.9 L 329.7,205.7 L 335.2,197.2 L 340.7,197.2 L 346.3,195.2 L 351.8,198.7 L 357.3,201.4 L 362.9,194.1 L 368.4,183.0 L 374.0,215.7 L 379.5,216.1 L 385.0,216.1 L 390.6,216.1 L 396.1,216.1 L 401.6,195.0 L 407.2,209.6 L 412.7,213.5 L 418.2,220.5 L 423.8,220.6 L 429.3,220.6 L 434.8,220.6 L 440.4,220.6 L 445.9,220.6 L 451.4,191.2 L 457.0,186.0 L 462.5,189.6 L 468.0,194.9 L 473.6,202.6 L 479.1,202.3 L 484.7,202.3 L 490.2,202.3 L 495.7,174.7 L 501.3,181.5 L 506.8,187.7 L 512.3,190.1 L 517.9,189.7 L 523.4,186.0 L 528.9,171.6 L 534.5,177.0 L 540.0,179.3 L 545.5,190.0 L 551.1,194.0 L 556.6,201.3 L 562.1,186.0 L 567.7,193.4 L 573.2,188.0 L 578.7,176.8 L 584.3,164.1 L 589.8,166.0 L 595.3,164.2 L 600.9,162.9 L 606.4,162.9 L 612.0,162.9 L 617.5,157.6 L 623.0,176.1 L 628.6,185.6 L 634.1,185.9 L 639.6,185.9 L 645.2,195.9 L 650.7,175.4 L 656.2,175.9 L 661.8,172.6 L 667.3,168.1 L 672.8,167.1 L 678.4,168.0 L 683.9,162.9 L 689.4,170.5 L 695.0,168.0 L 700.5,169.0 L 706.0,172.6 L 711.6,176.3 L 717.1,174.5 L 722.7,159.1 L 728.2,167.6 L 733.7,157.4 L 739.3,152.2 L 744.8,155.8 L 750.3,153.4 L 755.9,154.7 L 761.4,150.4 L 766.9,150.8 L 772.5,152.5 L 778.0,139.7 L 783.5,135.8 L 789.1,141.2 L 794.6,141.1 L 800.1,154.2 L 805.7,131.3 L 811.2,139.7 L 816.7,142.2 L 822.3,134.0 L 827.8,103.9 L 833.3,104.3 L 838.9,100.8 L 844.4,105.4 L 850.0,105.8 L 855.5,105.8 L 861.0,105.8 L 866.6,105.8 L 872.1,106.1 L 877.6,123.1 L 883.2,124.3 L 888.7,124.4 L 894.2,120.6 L 899.8,129.4 L 905.3,132.8 L 910.8,119.7 L 916.4,105.8 L 921.9,111.5 L 927.4,111.4 L 933.0,106.2 L 938.5,97.0 L 944.0,114.0 L 949.6,112.5 L 955.1,111.8 L 960.7,77.2 L 966.2,76.1 L 971.7,78.9 L 977.3,74.6 L 982.8,77.5 L 988.3,80.0 L 993.9,47.1 L 999.4,64.7 L 1004.9,65.3 L 1010.5,51.4 L 1016.0,35.4"/>
+      <circle cx="1016.0" cy="35.4" r="3.2" fill="#1a7f4b"/>
+    </svg>
+  </div>
+  <div class="note">This is the <b>deliberately unbiased</b> test: the method run on a
+    point-in-time, survivorship-free universe rather than the author&rsquo;s curated
+    watchlist &mdash; it isolates edge that comes from <i>the method</i>, not from
+    hindsight ticker selection. It held up through the 2022 bear market (+4.5% vs SPY &minus;18%).</div>
+
+  <div style="margin-top:11px;padding:10px 13px;border-left:3px solid #16202c;background:#f5f7f9;border-radius:0 5px 5px 0;font-size:11px;color:#2a3744;line-height:1.5;">
+    <b>Key finding &mdash; the short side is dead.</b> Running the identical method on
+    <b>both sides</b> drops it from <b>+70.5% to &minus;16.0%</b> (max drawdown 40%):
+    shorting overbought equities has negative expectancy, matching the published
+    mean-reversion literature. Long-only isn&rsquo;t cherry-picking &mdash; it&rsquo;s the result of testing both.
+  </div>
+
+  <div class="sec">How it&rsquo;s built &amp; validated</div>
+  <div class="cols">
+    <div class="col">
+      <h4>I drive</h4>
+      <ul>
+        <li>Encode the published checklist 1:1 &mdash; RSI 30/70 entry, RSI+MACD confirmation, &gt;14-day earnings filter, whole-number swing stop, RSI-50 exit.</li>
+        <li>Design the validation: train/test holdout, survivorship-free universe, and cross-checks against the author&rsquo;s own logged trades.</li>
+        <li>Decide what to test next &mdash; which filter to ablate, which assumption to stress.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Claude Code executes</h4>
+      <ul>
+        <li><b>Implementation</b> &mdash; turns the method into a parameterized QuantConnect algorithm (one compile drives every variant).</li>
+        <li><b>Automation</b> &mdash; a one-command deploy (<b>make deploy</b> &rarr; push · compile · backtest · ship) plus a CI&rsquo;d unit-test suite.</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4>Honest result</h4>
+      <ul>
+        <li><b>Short leg has no edge:</b> trading both sides cuts +70% to &minus;16% &mdash; a documented mean-reversion asymmetry &mdash; so the deployable config is <b>long-only</b>. A finding, not a filter.</li>
+        <li>Win rate on faithful runs <b>~55&ndash;58%</b> vs his reported <b>~76%</b>; the gap is hand discretion (one daily &ldquo;top pick,&rdquo; chart reads, early exits), not a coding error.</li>
+        <li><b>Next:</b> forward paper-trade, then the options overlay he actually trades.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="lead">The point isn&rsquo;t the headline return &mdash; it&rsquo;s the
+      <b>process</b>: a proven manual method, encoded faithfully, tested against its own
+      bias, and wired into a repeatable deploy pipeline. <b>I bring the strategy and the
+      skepticism; Claude Code is the build engine.</b></div>
+    <div class="meta">Sydney Watkins<br>github.com/sydneywatk/trader<br>QuantConnect/LEAN · 2020&ndash;2026</div>
+  </div>
+
+</body></html>
