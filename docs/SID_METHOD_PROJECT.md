@@ -60,12 +60,24 @@ sector/index ETFs and leveraged/inverse ETFs (TQQQ, SQQQ, TNA, TZA, DUST, NUGT�
 - [x] **Engine validated against his real trades** — reproduced 14/18 of a student's logged IWM trades; his DIS example to the day.
 - [x] **GitHub updated** — code, honest README, pipeline graphic (`docs/pipeline/`).
 
-## 6. Key findings (honest)
+## 6. Target & current status
 
-- The advertised **~88% win rate is selection bias** — measured on a watchlist curated on past win rate. Removed → **~61%** on a survivorship-free universe.
-- The faithful method is **high win rate but breakeven** (small wins, larger losses; profit-factor ~0.6). On *his* watchlist with *his* exit we get **~67%** — close to the students' ~75%; the rest of the gap is their discretion (one "top pick"/day, pattern confirmation, early exits) + small self-logged samples.
-- A **trailing-exit, longs-only variant** (our modification) turns the signal into **positive out-of-sample expectancy** — including **+4.5% in the 2022 bear while SPY −18%** (real alpha, not just bull beta). This is the durable result.
-- His **real returns come from an options overlay** (selling puts / buying calls) — structurally high win rate, separate from the signal. A shares backtest can't capture it; hence the phased plan below.
+- **Target: ~76% win rate** — the rate his students report on shares. That's the
+  bar the automated pipeline aims to reproduce on his ~100-ticker watchlist.
+- **Current (automated, faithful):** on his watchlist, both sides, taking every
+  signal mechanically → **~55% WR at ~25 trades/month** (cadence matches his).
+  The gap to 76% is the **discretion** he applies by hand — one "top pick" per
+  day, chart-pattern confirmation, early exits — plus small, self-logged student
+  samples. (Longs-only is higher win-rate but fewer trades; the trailing-exit
+  variant is positive out-of-sample but isn't his faithful method.) Closing the
+  gap is the WIP.
+- **Engine is faithful** — validated against his own logged trades (14/18 IWM,
+  DIS to the day), so the gap is selection/discretion, not a coding error.
+- **Honesty benchmark:** re-running on a survivorship-free universe separates
+  "the method" from "the names" — useful for knowing how much edge is real before
+  risking capital.
+- His **real returns come from an options overlay** (selling puts / buying calls),
+  which a shares backtest can't capture — hence Phase 2.
 
 ## 7. Roadmap (phased)
 
@@ -81,11 +93,18 @@ sector/index ETFs and leveraged/inverse ETFs (TQQQ, SQQQ, TNA, TZA, DUST, NUGT�
 **Phase 3 — Live** *(planned)*
 - [ ] Promote only after a forward edge holds; small size; low-correlation signals
 
-## 8. Open decisions / next steps
+## 8. Decisions & open items
 
-1. **Paper-trade venue:** QuantConnect paper brokerage (no credentials, ~$24/mo node) — node caps at 10 assets, so either run a ~10-ETF subset, pay for a bigger node, or do signals-only first.
-2. **Universe for production:** his fixed 92-ticker list (faithful to how he trades) vs the rule-based ETF-holdings universe (unbiased). Likely run **both** — his list live, the unbiased one as the honesty benchmark.
-3. **Options modeling** scoped as Phase 2.
+- **Universe — decided:** trade **his ~100 tickers only** (`universe=watchlist`,
+  the 92-ticker list). The survivorship-free universe stays as the honesty
+  benchmark, not the live config.
+- **Side & exit — decided:** both sides, his RSI-50 exit (this is what produces
+  the ~20–30 trades/month and matches his method). The trailing-exit variant is
+  kept as a documented economics improvement, not the faithful config.
+- **Open — paper-trade venue:** QuantConnect paper brokerage (no credentials,
+  ~$24/mo node) — node caps at 10 assets, so either run a ~10-ETF subset, pay for
+  a bigger node, or do signals-only first.
+- **Open — options overlay:** scoped as Phase 2.
 
 ## 9. Repo map
 

@@ -6,29 +6,30 @@ earnings utilities from `shared/`. The flagship effort is a faithful port and
 **honest, survivorship-free validation** of the discretionary "SID Method"
 mean-reversion strategy — including the QuantConnect work under `quantconnect/`.
 
-## Headline finding (SID Method)
+## What this is
 
-The method is taught with an ~88% win rate. That number is **selection bias**:
-it was measured on a hand-curated 99-ticker watchlist that was itself chosen by
-ranking tickers on past win rate — circular. This repo rebuilds the test
-honestly:
+An **automation project**: take a manually-traded discretionary method (the
+"SID Method," taught by Sid Naiman and reported by his students at a **~76% win
+rate**) and turn it into a tested, deployable pipeline using **Python,
+QuantConnect, GitHub, and Claude Code**.
 
-- **Faithful port** of the published checklist (RSI 30/70 entry · RSI+MACD
-  point/cross · earnings > 14 days · whole-number swing stop · exit at RSI 50).
-- **Survivorship-free, point-in-time universe** rebuilt from the constituents of
-  the 15 sector/index ETFs the author actually trades (QuantConnect historical
-  ETF holdings), with realistic Interactive Brokers fills and split-adjusted data.
-- **Train (2020–23) / test (2024–26) holdout.**
+- **Universe:** his own **~100-ticker watchlist** (~50/50 stocks/ETFs); 92 names
+  compiled from his published lists.
+- **Cadence:** the automated bot fires **~20–30 trades/month**, matching how he
+  trades it by hand.
+- **Target:** reproduce his **~76% win rate** on shares, then add the options
+  overlay he actually uses.
 
-Result: on the unbiased universe the faithful method is **~61% win rate but
-breakeven** (high hit-rate, small wins vs larger losses). A disciplined
-tweak-and-run loop then isolated a smaller, **genuine out-of-sample edge** — a
-trailing-exit, longs-only variant with positive expectancy in both train and
-test, including **+4.5% during the 2022 bear (SPY −18%)**. The engine was
-cross-checked against the author's own logged trades (reproduced 14 of 18
-documented IWM trades; the DIS example entry to the day).
+Built as a faithful port of the published checklist (RSI 30/70 entry · RSI+MACD
+point/cross · earnings > 14 days · whole-number swing stop · exit at RSI 50),
+with realistic Interactive Brokers fills and split-adjusted data. The engine is
+cross-checked against his own logged trades — it independently reproduced **14 of
+18** of a student's documented IWM trades and the DIS example to the day. We also
+re-run it on a survivorship-free universe as an honesty benchmark to separate
+"the method" from "the names."
 
-Full write-up and reproducible code: [`quantconnect/`](quantconnect/).
+**Status: work in progress** — see [`docs/SID_METHOD_PROJECT.md`](docs/SID_METHOD_PROJECT.md).
+Full code: [`quantconnect/`](quantconnect/).
 
 ## Layout
 
@@ -58,7 +59,7 @@ trader/
 
 | Strategy | Status | Notes |
 |---|---|---|
-| **SID Method** (`strategies/sid_method/`, `quantconnect/`) | **Validated** | Faithful RSI 30/70 + MACD mean-reversion port. Curated-watchlist ~88% WR is selection bias; survivorship-free QuantConnect test → **~61% WR, breakeven**. A trailing-exit longs-only variant shows **positive out-of-sample expectancy** (incl. +4.5% in the 2022 bear). Daily scanner with email + optional IBKR paper execution. |
+| **SID Method** (`strategies/sid_method/`, `quantconnect/`) | **WIP** | Automating a discretionary RSI 30/70 + MACD mean-reversion method (students report ~76% WR) on his ~100-ticker watchlist, ~20–30 trades/month. Faithful port validated against his real trades; survivorship-free benchmark separates method from names. Shares pipeline first, options overlay next. Daily scanner with email + optional IBKR paper execution. |
 | **Supply & Demand** (`strategies/supply_demand/`) | Phase 2 committed | RBR long-only zones on 1h intraday. 3,184 trades, +$290k long-only (vs +$127k long+short), 39.4% WR, edge persistent out-of-sample. Shorts disabled. See `strategies/supply_demand/RESEARCH.md`. |
 | **Breakout** (`strategies/breakout/`) | v1 spec'd | 52-week-high closing break (George & Hwang 2004), technical-only, S&P 500 universe, breadth filter, partial-at-1R + trail exit. See `docs/decisions/DECISION_LOG.md`. |
 
@@ -127,6 +128,25 @@ Environment variables loaded from `.env`:
 - `GSHEET_ID` — Google Sheets ID for `scripts/ci_daily_scan.py` output (optional)
 
 QuantConnect work runs in the QC cloud (MCP server / web IDE); no local data needed.
+
+## Tests
+
+Deterministic strategy math is unit-tested (`tests/`, 33 tests, run in CI via
+`.github/workflows/tests.yml`):
+
+- `test_indicators.py` — RSI / MACD / SMA: invariants (RSI bounded [0,100],
+  all-gains→100, warmup NaN, histogram ≡ line − signal) plus characterization
+  locks on a fixed price vector, so a formula change trips a test.
+- `test_signals.py` — the RSI 30/70 crossing logic (exact entry-signal semantics).
+- `test_earnings.py` — the pure earnings-date helpers (the > 14-day rule).
+
+```
+pip install -r requirements-dev.txt
+python3 -m pytest tests/ -q
+```
+
+The *deterministic math* is unit-tested; the *strategy behavior* is validated
+empirically against the author's own logged trades (see `quantconnect/`).
 
 ## Conventions
 
