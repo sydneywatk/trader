@@ -1,6 +1,13 @@
 # SID Method
 
-RSI 30/70 entry with weekly RSI alignment, MACD confirmation, earnings buffer, and SPY trend filter. Validated at **88.4% WR out-of-sample** on a 100-ticker universe (2024-today after GOOG/FOX removed).
+RSI 30/70 entry with weekly RSI alignment, MACD confirmation, earnings buffer, and SPY trend filter.
+
+> **Local engine — secondary track.** This is the original standalone Python
+> backtester + daily EOD scanner (email alerts, signal queue, optional **IBKR**
+> paper execution). The pipeline this project showcases runs on **QuantConnect**
+> — see the [top-level README](../../README.md). For honest, survivorship-free
+> performance numbers, trust the QuantConnect validation, not curated-watchlist
+> backtests here.
 
 ## The signal
 
