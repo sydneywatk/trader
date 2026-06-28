@@ -12,7 +12,10 @@ human in the loop.**
 and automation engine** — it coded the method in Python and built the one-command
 deploy. Stack: **Python · QuantConnect/LEAN · GitHub · Claude Code**.
 
-> 📄 **One-page summary:** [`docs/onepager/sid_onepager.pdf`](docs/onepager/sid_onepager.pdf)
+![From a trader's checklist to an automated pipeline](docs/pipeline/sid_method_pipeline.png)
+
+> 📄 **One-page results summary:** [`docs/onepager/sid_onepager.pdf`](docs/onepager/sid_onepager.pdf)
+> · **pipeline diagram:** [PDF](docs/pipeline/sid_method_pipeline.pdf) · [HTML](docs/pipeline/sid_method_pipeline.html)
 
 **How I use Claude Code:**
 - **Implementation** — I supply the trading method and the judgment calls (what to
