@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>SID Method Pipeline v6</title>
+<title>SID Method Pipeline v7</title>
 <style>
   :root{ --blue:#2f6bf6; --ink:#111418; --gray:#8a929c; --line:#e6e8ec; }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -11,14 +11,14 @@
   .eyebrow{font-size:11px;letter-spacing:.18em;color:var(--gray);font-weight:600}
   h1{font-size:43px;font-weight:400;margin-top:8px;letter-spacing:-.01em}
   h1 b{font-weight:700}
-  .sub{margin-top:12px;color:#5b626b;font-size:14.5px;max-width:820px;line-height:1.5}
+  .sub{margin-top:12px;color:#5b626b;font-size:14.5px;max-width:840px;line-height:1.5}
   .sub b{color:#2b3138}
   .legend{position:absolute;right:0;top:4px;text-align:right;font-size:11px;letter-spacing:.14em;color:var(--gray)}
   .legend div{margin:5px 0;font-weight:600}
   .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:8px;vertical-align:middle}
   .dot.live{background:var(--blue)} .dot.pend{background:#9aa1ab} .dot.plan{background:transparent;border:1.5px solid #c2c7ce}
   .rule{height:2px;background:var(--blue);margin:22px 0 0;width:100%}
-  .canvas{position:relative;width:1600px;height:600px;margin-top:16px}
+  .canvas{position:relative;width:1600px;height:690px;margin-top:16px}
   svg.arrows{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
   .card{position:absolute;background:#fff;border:1px solid var(--line);border-radius:7px;padding:14px 15px;z-index:1}
   .card .top{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.13em;color:var(--gray);font-weight:600}
@@ -33,23 +33,33 @@
   .filter span{display:block;color:#9097a0;font-size:11px;margin-top:1px}
   .drop{font-size:10.5px;color:#6b727b;line-height:1.4;margin-top:6px}
   .drop b{color:#3d444c;font-weight:600}
-  .band{position:absolute;background:var(--blue);border-radius:10px;z-index:1;padding:15px 16px;color:#fff}
+  /* claude band (orchestrator, blue) */
+  .band{position:absolute;background:var(--blue);border-radius:9px;z-index:1;padding:14px 16px;color:#fff}
   .band .blabel{font-size:10px;letter-spacing:.13em;color:rgba(255,255,255,.85);font-weight:600}
-  .band h2{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-top:2px}
-  .band .bsub{font-size:10px;letter-spacing:.12em;color:rgba(255,255,255,.8);font-weight:600;margin-top:4px}
-  .subcard{position:absolute;background:#fff;border-radius:6px;padding:12px 13px;z-index:2}
-  .subcard .n{font-size:9.5px;letter-spacing:.12em;color:var(--gray);font-weight:600}
-  .subcard h4{font-size:14px;font-weight:700;margin-top:5px;letter-spacing:-.01em}
-  .subcard p{font-size:11px;color:#3d444c;line-height:1.45;margin-top:6px}
+  .band h2{font-size:20px;font-weight:700;letter-spacing:-.01em;margin-top:3px}
+  .band .bbody{font-size:12px;color:#eaf0ff;line-height:1.5;margin-top:9px}
+  .band .bbody b{color:#fff;font-weight:600}
+  /* quantconnect engine card */
+  .qc{position:absolute;background:#fff;border:1.5px solid var(--blue);border-radius:9px;z-index:1;padding:13px 16px}
+  .qc .top{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.13em;color:var(--blue);font-weight:600}
+  .qc h3{font-size:18px;font-weight:700;margin-top:6px;letter-spacing:-.01em}
+  .qc .body{font-size:12px;color:#3d444c;line-height:1.5;margin-top:6px}
+  .qc .body .meta{color:#9097a0;font-size:11px}
   .pct{font-size:34px;font-weight:700;color:var(--blue);line-height:1}
-  .pct .t{color:#3d444c;font-size:22px}
-  .pct .ar{color:#c2c7ce;font-weight:400;margin:0 7px}
+  .pct .t{color:#3d444c;font-size:22px} .pct .ar{color:#c2c7ce;font-weight:400;margin:0 7px}
   .pct small{display:block;font-size:10.5px;color:#9097a0;font-weight:600;letter-spacing:.04em;margin-top:7px}
   .reslist{font-size:11.5px;color:#3d444c;line-height:1.5;margin-top:9px}
   .reslist b{color:var(--ink);font-weight:600}
   .black{background:#0c0e12;color:#fff;border:none}
   .black .top{color:#7e8794} .black .kicker{color:#7e8794} .black .body{color:#c7cdd4}
-  .arrlabel{position:absolute;z-index:3;font-size:9.5px;letter-spacing:.08em;color:#9097a0;font-weight:600}
+  .arrlabel{position:absolute;z-index:3;font-size:9px;letter-spacing:.08em;color:#9097a0;font-weight:700}
+  .usecases{position:absolute;left:0;width:1600px;background:#f6f8fe;border:1px solid #d8e3fb;border-radius:9px;padding:14px 20px;z-index:1}
+  .usecases .h{font-size:10.5px;letter-spacing:.16em;color:var(--blue);font-weight:700}
+  .uc-row{display:flex;gap:40px;margin-top:9px}
+  .uc{flex:1;font-size:12.5px;color:#3d444c;line-height:1.45}
+  .uc b{color:var(--ink);font-weight:700}
+  .uc .who{color:var(--blue);font-weight:700}
+  .uc code{font-family:'SF Mono',Menlo,monospace;font-size:11px;background:#e7eefc;padding:1px 5px;border-radius:3px;color:#1f57e0}
   .footer{margin-top:14px;display:flex;justify-content:space-between;font-size:11px;letter-spacing:.14em;color:var(--gray);font-weight:600}
 </style>
 </head>
@@ -57,7 +67,7 @@
 <div class="wrap">
   <div class="eyebrow">ALGORITHMIC TRADING SYSTEM &nbsp;&mdash;&nbsp; SID METHOD</div>
   <h1>From a trader's checklist to an <b>automated pipeline</b></h1>
-  <div class="sub">Automating a discretionary RSI&ndash;MACD mean-reversion method (students report a <b>~76% win rate</b>) on the trader's own <b>~100-ticker watchlist</b>, long and short. The whole build &mdash; coding, backtesting, validation &mdash; is orchestrated in <b>Claude Code</b>, version-controlled on GitHub. <b>Work in progress.</b></div>
+  <div class="sub">Automating a discretionary RSI&ndash;MACD mean-reversion method (students report a <b>~76% win rate</b>) on the trader's own <b>~100-ticker watchlist</b>, long and short. <b>I bring the strategy and the judgment; I use Claude Code to implement and automate it</b> &mdash; coded in Python, run on <b>QuantConnect</b>, shipped with a one-command deploy. Version-controlled on GitHub. <b>Work in progress.</b></div>
   <div class="legend">
     <div>DONE <span class="dot live"></span></div>
     <div>PENDING <span class="dot pend"></span></div>
@@ -70,28 +80,27 @@
       <defs>
         <marker id="ah" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#2f6bf6"/></marker>
         <marker id="ahg" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa1ab"/></marker>
-        <marker id="ahw" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#fff"/></marker>
       </defs>
-      <!-- 01 -> 02 port -->
+      <!-- 01 -> 02 -->
       <path d="M222,250 L240,250" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
-      <!-- 02 port -> claude band -->
-      <path d="M400,255 L420,255" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
-      <!-- claude band -> 05 out-of-sample -->
-      <path d="M792,255 L810,255" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
-      <!-- 05 -> 06 result -->
-      <path d="M980,255 L998,255" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
-      <!-- 06 -> 07 paper -->
-      <path d="M1220,232 L1238,222" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
-      <!-- 07 -> 08 live (planned) -->
-      <path d="M1320,302 L1320,330" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ahg)"/>
-      <!-- tune loop inside band: Decide -> Implement (white) -->
-      <path d="M602,228 L612,228" fill="none" stroke="#fff" stroke-width="1.7" marker-end="url(#ahw)"/>
-      <!-- tune loop return U (white dashed) -->
-      <path d="M690,360 L690,384 L518,384 L518,362" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#ahw)"/>
+      <!-- 02 -> claude band -->
+      <path d="M400,212 L426,212" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
+      <!-- claude -> quantconnect (run, down) -->
+      <path d="M536,290 L536,330" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
+      <!-- quantconnect -> claude (results, up) -->
+      <path d="M636,330 L636,290" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
+      <!-- loop -> out-of-sample test (once it holds) -->
+      <path d="M740,212 L812,212" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
+      <!-- oos -> result -->
+      <path d="M982,250 L1000,250" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
+      <!-- result -> paper -->
+      <path d="M1222,230 L1240,220" fill="none" stroke="#2f6bf6" stroke-width="1.8" marker-end="url(#ah)"/>
+      <!-- paper -> live (planned) -->
+      <path d="M1324,300 L1324,330" fill="none" stroke="#9aa1ab" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ahg)"/>
     </svg>
 
     <!-- 01 Checklist -->
-    <div class="card" style="left:24px;top:120px;width:198px;height:392px">
+    <div class="card" style="left:24px;top:118px;width:196px;height:392px">
       <div class="top"><span>01 &middot; INPUT</span><span class="status">METHOD<span class="dot live"></span></span></div>
       <h3>The Checklist</h3>
       <div class="kicker">SID CRITERIA &middot; LONG &amp; SHORT</div>
@@ -105,35 +114,38 @@
     </div>
 
     <!-- 02 Faithful Port -->
-    <div class="card" style="left:240px;top:178px;width:160px;height:168px">
+    <div class="card" style="left:240px;top:135px;width:160px;height:160px">
       <div class="top"><span>02</span><span class="status">DONE<span class="dot live"></span></span></div>
       <h3>Faithful Port</h3>
       <div class="kicker">RULES &rarr; CODE</div>
       <div class="div"></div>
-      <div class="body">His checklist encoded <b>1:1</b> in Python on the QuantConnect engine.
+      <div class="body">His checklist encoded <b>1:1</b> in Python.
         <div class="meta">a straight translation &mdash; no rules changed</div></div>
     </div>
 
-    <!-- 04 Claude band (tune loop) -->
-    <div class="band" style="left:420px;top:120px;width:372px;height:312px">
-      <div class="blabel">04 &middot; ORCHESTRATOR</div>
+    <!-- 04 Claude Code band (orchestrator / human-directed) -->
+    <div class="band" style="left:426px;top:135px;width:314px;height:152px">
+      <div class="blabel">04 &middot; ORCHESTRATOR &middot; SYDNEY DIRECTS</div>
       <h2>Claude Code</h2>
-      <div class="bsub">HUMAN-DIRECTED REVIEW LOOP</div>
+      <div class="bbody"><b>I decide</b> what to test and how to read it; <b>Claude implements</b> each change in Python and triggers the run.</div>
     </div>
-    <div class="subcard" style="left:438px;top:198px;width:160px;height:158px">
-      <div class="n" style="color:#2f6bf6">YOU + CLAUDE</div>
-      <h4>Review &amp; Decide</h4>
-      <p>Claude and I read each backtest together and decide what's next: how to interpret it, whether we need more tests, and what to tune.</p>
+
+    <!-- 03 QuantConnect engine -->
+    <div class="qc" style="left:426px;top:330px;width:314px;height:128px">
+      <div class="top"><span>03 &middot; BACKTEST ENGINE<span class="dot live"></span></span><span>DONE</span></div>
+      <h3>QuantConnect</h3>
+      <div class="body">Runs each backtest in the cloud &mdash; realistic IBKR fills, historical data.
+        <div class="meta">&rarr; win rate, P&amp;L, equity curve · his ~100 tickers</div></div>
     </div>
-    <div class="subcard" style="left:612px;top:198px;width:160px;height:158px">
-      <div class="n">CLAUDE</div>
-      <h4>Implement &amp; Backtest</h4>
-      <p>Claude codes the change and re-runs it on the <b>2020&ndash;23 train</b> data &mdash; in minutes.</p>
-    </div>
-    <div class="arrlabel" style="left:512px;top:392px;color:rgba(255,255,255,.92);letter-spacing:.11em;">&#8635; REVIEW LOOP &middot; ON 2020&ndash;23 TRAIN</div>
+
+    <!-- loop labels -->
+    <div class="arrlabel" style="left:476px;top:303px;color:#2f6bf6;">RUN &darr;</div>
+    <div class="arrlabel" style="left:648px;top:303px;color:#2f6bf6;">&uarr; RESULTS</div>
+    <div class="arrlabel" style="left:440px;top:474px;color:#2f6bf6;letter-spacing:.1em;">&#8635; REVIEW LOOP &mdash; CLAUDE EDITS &rarr; QUANTCONNECT RUNS &rarr; WE DECIDE NEXT &middot; ON 2020&ndash;23 TRAIN</div>
+    <div class="arrlabel" style="left:748px;top:196px;">once it holds</div>
 
     <!-- 05 Out-of-Sample Test -->
-    <div class="card" style="left:810px;top:178px;width:170px;height:168px">
+    <div class="card" style="left:812px;top:165px;width:170px;height:172px">
       <div class="top"><span>05</span><span class="status">VALIDATE ONCE<span class="dot live"></span></span></div>
       <h3>Out-of-Sample Test</h3>
       <div class="kicker">CAN WE TRUST IT?</div>
@@ -143,7 +155,7 @@
     </div>
 
     <!-- 06 Result -->
-    <div class="card" style="left:998px;top:150px;width:222px;height:236px">
+    <div class="card" style="left:1000px;top:140px;width:222px;height:236px">
       <div class="top"><span>06</span><span class="status">IN PROGRESS<span class="dot live"></span></span></div>
       <h3>Result</h3>
       <div class="kicker">CURRENT VS TARGET</div>
@@ -154,7 +166,7 @@
     </div>
 
     <!-- 07 Paper -->
-    <div class="card" style="left:1238px;top:150px;width:168px;height:152px">
+    <div class="card" style="left:1240px;top:140px;width:168px;height:152px">
       <div class="top"><span>07</span><span class="status">PENDING<span class="dot pend"></span></span></div>
       <h3>Paper Trading</h3>
       <div class="kicker">QC FORWARD TEST</div>
@@ -164,12 +176,21 @@
     </div>
 
     <!-- 08 Live -->
-    <div class="card black" style="left:1238px;top:330px;width:168px;height:182px">
+    <div class="card black" style="left:1240px;top:330px;width:168px;height:182px">
       <div class="top"><span>08</span><span class="status" style="color:#7e8794">PLANNED<span class="dot plan"></span></span></div>
       <h3>Live Trading</h3>
       <div class="kicker">CAPITAL DEPLOYMENT</div>
       <div class="div"></div>
       <div class="body">Small size; options overlay &mdash; calls / sold puts, where his real returns live.</div>
+    </div>
+
+    <!-- How I use Claude Code (two use-cases) -->
+    <div class="usecases" style="top:540px;">
+      <div class="h">HOW I USE CLAUDE CODE &nbsp;&mdash;&nbsp; I'M THE STRATEGIST; CLAUDE IS THE IMPLEMENTATION &amp; AUTOMATION ENGINE</div>
+      <div class="uc-row">
+        <div class="uc"><span class="who">&#9312; Implementation.</span> I supply the trading method and the judgment; Claude turns it into <b>Python</b> &mdash; the faithful port and every backtested variant.</div>
+        <div class="uc"><span class="who">&#9313; Automation.</span> I had Claude build a <b>one-command deploy</b>: <code>make deploy</code> pushes any new algo &rarr; compile &rarr; backtest &rarr; ship. Plus CI tests &amp; scheduling.</div>
+      </div>
     </div>
   </div>
 

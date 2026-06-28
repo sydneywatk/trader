@@ -129,6 +129,22 @@ Environment variables loaded from `.env`:
 
 QuantConnect work runs in the QC cloud (MCP server / web IDE); no local data needed.
 
+## Deploy (one command)
+
+`quantconnect/deploy.py` ships a strategy to QuantConnect end-to-end — push →
+compile → backtest → print stats — so a new algo goes live in one command:
+
+```
+make deploy STRATEGY=quantconnect/sid_quantconnect_experiments.py
+# or with parameters:
+python3 quantconnect/deploy.py quantconnect/sid_quantconnect_experiments.py \
+    --params universe=watchlist side=long start_year=2024
+```
+
+Credentials come from the environment or `.env` (QuantConnect → Account →
+Security): `QC_USER_ID`, `QC_API_TOKEN`. Add `--no-backtest` to deploy + compile
+only.
+
 ## Tests
 
 Deterministic strategy math is unit-tested (`tests/`, 33 tests, run in CI via
