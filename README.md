@@ -1,34 +1,48 @@
 # trader — SID Method × QuantConnect
 
 Automating a hand-traded discretionary swing-trading method (the **"SID Method,"**
-an RSI/MACD mean-reversion strategy reported at a **~76% win rate**) into a
-tested, **survivorship-free-validated**, one-command-deployable **QuantConnect**
-pipeline.
+an RSI/MACD mean-reversion strategy reported at a **~76% win rate**) into a tested,
+**survivorship-free-validated**, one-command-deployable **QuantConnect** pipeline.
+
+The goal isn't to invent a strategy — it's to **faithfully reproduce a working
+discretionary method in code, validate it honestly, and run it forward without a
+human in the loop.**
 
 **I bring the strategy and the judgment; I use Claude Code as the implementation
-and automation engine** — it coded the method in Python and built a one-command
+and automation engine** — it coded the method in Python and built the one-command
 deploy. Stack: **Python · QuantConnect/LEAN · GitHub · Claude Code**.
 
-> 📄 **Start here:** the [**project writeup**](docs/SID_METHOD_PROJECT.md) (the full
-> story — thesis, method, honest results) and the
-> [**one-pager**](docs/onepager/sid_onepager.pdf) (one-page summary).
-
-- **Universe:** the trader's own **~100-ticker watchlist** (~50/50 stocks/ETFs;
-  92 names compiled from his published lists), plus a **survivorship-free**
-  universe used as an honesty benchmark.
-- **Cadence:** the automated strategy fires **~20–30 trades/month**, matching how
-  he trades it by hand.
-- **Target:** reproduce his **~76% win rate** on shares, then add the options
-  overlay he actually uses.
+> 📄 **One-page summary:** [`docs/onepager/sid_onepager.pdf`](docs/onepager/sid_onepager.pdf)
 
 **How I use Claude Code:**
-- **Implementation** — I supply the trading method and the judgment calls (what
-  to test, how to read it); Claude codes it in Python — the faithful port and
-  every backtested variant.
+- **Implementation** — I supply the trading method and the judgment calls (what to
+  test, how to read it); Claude codes it in Python — the faithful port and every
+  backtested variant.
 - **Automation** — I had Claude build a **one-command deploy** (`make deploy` →
   push · compile · backtest · ship), plus the CI test suite.
 
-**Status: work in progress** — see [`docs/SID_METHOD_PROJECT.md`](docs/SID_METHOD_PROJECT.md).
+**Status: work in progress** — shares pipeline validated; forward paper-trade and
+the options overlay are next.
+
+## Results
+
+QuantConnect/LEAN, 2020-01-01 → 2026-04-30, realistic IBKR fill model.
+
+**Deployable config** — long-only, survivorship-free universe, ATR-trailing exit:
+
+| Net return | CAGR | Max drawdown | Sharpe | 2022 (bear) |
+|---|---|---|---|---|
+| **+70.5%** | 8.8% | 12.4% | 0.30 | **+4.5%** vs SPY −18% |
+
+**Key finding — the short side has no edge.** Running the *identical* method on
+both sides drops it from **+70.5% to −16.0%** (max drawdown 40%): shorting
+overbought equities has negative expectancy, matching the mean-reversion
+literature. So long-only is a **finding, not a filter**.
+
+**Faithful run** (his watchlist, both sides, his RSI-50 exit) → **~55–58% win rate
+at ~25 trades/month**, cadence matching his hand-trading. The gap to his reported
+**~76%** is discretion (one daily "top pick," chart reads, early exits), not a
+coding error — the engine reproduces his real trades.
 
 ## The method
 
@@ -40,16 +54,32 @@ A daily-chart mean-reversion system, ported 1:1 from the published checklist:
 - **Stop:** swing low/high between signal and entry, rounded to the whole dollar
 - **Exit:** take profit when RSI returns to 50 (only two exits: stop or RSI-50)
 
-Modeled with **QuantConnect's Interactive Brokers fill model** and
-**split-adjusted** data. The engine is cross-checked against the trader's own
-logged trades — it reproduces his DIS example to the day — and re-run on a
-**survivorship-free** universe to separate "the method" from "the names."
+Cadence in his hands: **~20–30 setups/month**, entered in the last hour, ~5–7
+trading days per trade. Modeled with **QuantConnect's Interactive Brokers fill
+model** and **split-adjusted** data; cross-checked against his own logged trades
+(reproduces his DIS example to the day).
 
-## QuantConnect pipeline (`quantconnect/`)
+## Universe & honest validation
 
-`sid_quantconnect_experiments.py` is **one parameterized algorithm** that drives
-every test from a single compile — so each A/B is clean (no code drift) and a
-train/test holdout is just a parameter change.
+We trade **only the ~100 tickers he actually trades** — his watchlist is "about
+50-50 stocks/ETFs"; we compiled a deduped **92-ticker** list from his published
+"Stocks List of Profitable Trades" slides (large/liquid names + sector/index ETFs +
+leveraged/inverse ETFs like TQQQ/TZA/NUGT that mean-revert strongly).
+
+Committing in advance to one universe removes per-period cherry-picking — but his
+list was *chosen with hindsight* on past winners. So the honest proof is two
+things the headline numbers above already reflect:
+
+1. **A survivorship-free universe** rebuilt from point-in-time ETF holdings —
+   measures how much edge is *the method* vs *the names*. (This is the equity
+   curve in the one-pager.)
+2. **A forward paper test** — the real out-of-sample gate (Phase 1's final step).
+
+## The algorithm (`sid_method.py`)
+
+`sid_method.py` is **one parameterized algorithm** that drives every test from a
+single compile — so each A/B is clean (no code drift) and a train/test holdout is
+just a parameter change.
 
 | Param | Values | Purpose |
 |---|---|---|
@@ -63,29 +93,18 @@ train/test holdout is just a parameter change.
 - **Holdout:** train `2020-01-01…2023-12-31`, test `2024-01-01…2026-04-30` — judge by
   expectancy / profit-loss ratio, not win rate.
 
-Files:
-
-```
-quantconnect/
-├── sid_quantconnect_experiments.py   parameterized algorithm — one compile drives
-│                                     every variant (universe / exit / filters / side / dates)
-└── deploy.py                         one-command push → compile → backtest → stats
-```
-
-Reproduce: create a QuantConnect Python project, paste
-`sid_quantconnect_experiments.py` as `main.py`, and run with the parameter sets
-above — or use the deploy command below.
+Reproduce: create a QuantConnect Python project, paste `sid_method.py` as
+`main.py`, and run with the parameter sets above — or use the deploy command below.
 
 ## Deploy (one command)
 
-`quantconnect/deploy.py` ships a strategy to QuantConnect end-to-end — push →
-compile → backtest → print stats — so a new algo goes live in one command:
+`deploy.py` ships a strategy to QuantConnect end-to-end — push → compile →
+backtest → print stats — so a new algo goes live in one command:
 
 ```
-make deploy STRATEGY=quantconnect/sid_quantconnect_experiments.py
+make deploy STRATEGY=sid_method.py
 # or with parameters:
-python3 quantconnect/deploy.py quantconnect/sid_quantconnect_experiments.py \
-    --params universe=watchlist side=long start_year=2024
+python3 deploy.py sid_method.py --params universe=watchlist side=long start_year=2024
 ```
 
 Credentials come from the environment or a (gitignored) `.env` (QuantConnect →
@@ -110,16 +129,26 @@ python3 -m pytest tests/ -q
 The *deterministic math* is unit-tested; the *strategy behavior* is validated
 empirically on QuantConnect against the author's own logged trades.
 
+## Roadmap
+
+- **Phase 1 — Shares pipeline** *(nearly done):* faithful signal, survivorship-free
+  validation, trade cross-checks; deployable config locked (long-only, ATR-trailing,
+  1% risk). Final gate: **forward paper-trade on QuantConnect.**
+- **Phase 2 — Options overlay** *(planned):* express each signal the way he does —
+  ≈2 months out, ATM or 1-strike OTM, calls (bullish) / sold puts (income); model
+  option chains, premiums, assignment. *(His real returns come from this overlay,
+  which a shares backtest can't capture.)*
+- **Phase 3 — Live** *(planned):* promote only after a forward edge holds; small size.
+
 ## Repo layout
 
 ```
 trader/
-├── quantconnect/        # the pipeline this repo showcases
-│   ├── sid_quantconnect_experiments.py   parameterized algorithm (universe / exit / filters / side / dates)
-│   └── deploy.py                          one-command push → compile → backtest → stats
-├── shared/              # the indicator/earnings/config math the tests lock down
-├── tests/               # unit tests for that math (CI)
-└── docs/                # project writeup, decision log, research, one-pager + graphic
+├── sid_method.py    # the QuantConnect/LEAN algorithm — one compile drives every variant
+├── deploy.py        # one-command push → compile → backtest → stats
+├── shared/          # the indicator/earnings/config math the tests lock down
+├── tests/           # unit tests for that math (CI)
+└── docs/            # one-pager, pipeline graphic, decision log, research
 ```
 
 > **A note on scope.** This repo is the **QuantConnect** pipeline — the faithful
@@ -137,8 +166,7 @@ pip install -r requirements.txt
 ```
 
 QuantConnect work runs in the QC cloud (MCP server / web IDE) — no local market
-data needed. The local engine's environment (`EMAIL_*`, `IBKR_*`, `GSHEET_ID`) is
-documented in the local README.
+data needed.
 
 ## Conventions
 

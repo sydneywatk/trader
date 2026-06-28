@@ -4,12 +4,12 @@
 Pushes a Python algorithm to a QuantConnect project, compiles it, runs a
 backtest, and prints the key statistics — so shipping a new algo is one command:
 
-    python quantconnect/deploy.py quantconnect/sid_quantconnect_experiments.py
-    python quantconnect/deploy.py path/to/algo.py --project "My Algo" \
+    python deploy.py sid_method.py
+    python deploy.py path/to/algo.py --project "My Algo" \
         --params universe=watchlist side=long start_year=2024
-    python quantconnect/deploy.py path/to/algo.py --no-backtest   # deploy + compile only
+    python deploy.py path/to/algo.py --no-backtest   # deploy + compile only
 
-Or via the Makefile:  make deploy STRATEGY=quantconnect/sid_quantconnect_experiments.py
+Or via the Makefile:  make deploy STRATEGY=sid_method.py
 
 Credentials (QuantConnect -> Account -> Security): set in the environment or in
 a (gitignored) .env at the repo root:
