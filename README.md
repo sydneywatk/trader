@@ -15,7 +15,7 @@ deploy. Stack: **Python · QuantConnect/LEAN · GitHub · Claude Code**.
 ![From a trader's checklist to an automated pipeline](docs/pipeline/sid_method_pipeline.png)
 
 > 📄 **One-page results summary:** [`docs/onepager/sid_onepager.pdf`](docs/onepager/sid_onepager.pdf)
-> · **pipeline diagram:** [PDF](docs/pipeline/sid_method_pipeline.pdf) · [HTML](docs/pipeline/sid_method_pipeline.html)
+> · **pipeline diagram:** [PDF](docs/pipeline/sid_method_pipeline.pdf)
 
 **How I use Claude Code:**
 - **Implementation** — I supply the trading method and the judgment calls (what to
@@ -42,10 +42,10 @@ both sides drops it from **+70.5% to −16.0%** (max drawdown 40%): shorting
 overbought equities has negative expectancy, matching the mean-reversion
 literature. So long-only is a **finding, not a filter**.
 
-**Faithful run** (his watchlist, both sides, his RSI-50 exit) → **~55–58% win rate
-at ~25 trades/month**, cadence matching his hand-trading. The gap to his reported
-**~76%** is discretion (one daily "top pick," chart reads, early exits), not a
-coding error — the engine reproduces his real trades.
+**Faithful run** (both sides, his RSI-50 exit) → **~61% win rate at ~25
+trades/month**, cadence matching his hand-trading. The gap to his reported **~76%**
+is discretion (one daily "top pick," chart reads, early exits), not a coding error
+— the engine reproduces his real trades.
 
 ## The method
 
