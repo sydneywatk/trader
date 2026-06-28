@@ -151,7 +151,7 @@ trader/
 ├── deploy.py        # one-command push → compile → backtest → stats
 ├── shared/          # the indicator/earnings/config math the tests lock down
 ├── tests/           # unit tests for that math (CI)
-└── docs/            # one-pager, pipeline graphic, decision log, research
+└── docs/            # one-pager (results) + pipeline graphic
 ```
 
 > **A note on scope.** This repo is the **QuantConnect** pipeline — the faithful
