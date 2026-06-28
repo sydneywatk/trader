@@ -9,22 +9,32 @@ mean-reversion strategy — including the QuantConnect work under `quantconnect/
 ## What this is
 
 An **automation project**: take a manually-traded discretionary method (the
-"SID Method," taught by Sid Naiman and reported by his students at a **~76% win
-rate**) and turn it into a tested, deployable pipeline using **Python,
-QuantConnect, GitHub, and Claude Code**.
+"SID Method," an RSI/MACD mean-reversion strategy reported at a **~76% win
+rate**) and turn it into a tested, deployable pipeline.
 
-- **Universe:** his own **~100-ticker watchlist** (~50/50 stocks/ETFs); 92 names
-  compiled from his published lists.
+**I bring the strategy and the judgment; I use Claude Code as the implementation
+and automation engine** — it coded the method in Python and built a one-command
+deploy pipeline. Stack: **Python · QuantConnect · GitHub · Claude Code**.
+
+- **Universe:** the trader's own **~100-ticker watchlist** (~50/50 stocks/ETFs);
+  92 names compiled from his published lists.
 - **Cadence:** the automated bot fires **~20–30 trades/month**, matching how he
   trades it by hand.
 - **Target:** reproduce his **~76% win rate** on shares, then add the options
   overlay he actually uses.
 
+**How I use Claude Code:**
+- **Implementation** — I supply the trading method and the judgment calls (what
+  to test, how to read it); Claude codes it in Python — the faithful port and
+  every backtested variant.
+- **Automation** — I had Claude build a **one-command deploy** (`make deploy` →
+  push · compile · backtest · ship), plus the CI test suite and scheduling.
+
 Built as a faithful port of the published checklist (RSI 30/70 entry · RSI+MACD
 point/cross · earnings > 14 days · whole-number swing stop · exit at RSI 50),
 with realistic Interactive Brokers fills and split-adjusted data. The engine is
-cross-checked against his own logged trades — it independently reproduced **14 of
-18** of a student's documented IWM trades and the DIS example to the day. We also
+cross-checked against the trader's own logged trades — it independently reproduced
+**14 of 18** documented IWM trades and the DIS example to the day. We also
 re-run it on a survivorship-free universe as an honesty benchmark to separate
 "the method" from "the names."
 
@@ -59,7 +69,7 @@ trader/
 
 | Strategy | Status | Notes |
 |---|---|---|
-| **SID Method** (`strategies/sid_method/`, `quantconnect/`) | **WIP** | Automating a discretionary RSI 30/70 + MACD mean-reversion method (students report ~76% WR) on his ~100-ticker watchlist, ~20–30 trades/month. Faithful port validated against his real trades; survivorship-free benchmark separates method from names. Shares pipeline first, options overlay next. Daily scanner with email + optional IBKR paper execution. |
+| **SID Method** (`strategies/sid_method/`, `quantconnect/`) | **WIP** | Automating a discretionary RSI 30/70 + MACD mean-reversion method (reported ~76% WR) on his ~100-ticker watchlist, ~20–30 trades/month. Faithful port validated against his real trades; survivorship-free benchmark separates method from names. Shares pipeline first, options overlay next. Daily scanner with email + optional IBKR paper execution. |
 | **Supply & Demand** (`strategies/supply_demand/`) | Phase 2 committed | RBR long-only zones on 1h intraday. 3,184 trades, +$290k long-only (vs +$127k long+short), 39.4% WR, edge persistent out-of-sample. Shorts disabled. See `strategies/supply_demand/RESEARCH.md`. |
 | **Breakout** (`strategies/breakout/`) | v1 spec'd | 52-week-high closing break (George & Hwang 2004), technical-only, S&P 500 universe, breadth filter, partial-at-1R + trail exit. See `docs/decisions/DECISION_LOG.md`. |
 
