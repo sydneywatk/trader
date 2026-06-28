@@ -94,6 +94,8 @@ EARNINGS_MIN_DAYS = 14      # Cannot enter within N days of earnings
 # Risk
 ACCOUNT_SIZE = 100_000
 RISK_PCT = 0.01             # 1% account risk per trade
+MAX_OPEN_POSITIONS = 20     # cap concurrent positions — matters on a broad universe,
+                            # where same-day signal clusters would otherwise exceed margin
 
 # Toggles for sweep / debug
 USE_SPY_FILTER = True
@@ -171,6 +173,7 @@ class SymbolState:
         self.rsi = None
         self.rsi_prev = None
         self.macd = None
+        self.macd_hist_prev = None   # prior-bar MACD histogram (for "hist rising/falling")
         self.weekly = WeeklyRsiTracker(RSI_PERIOD)
 
         # Signal tracking — a "signal" is the day RSI first crossed 30/70.
@@ -286,8 +289,9 @@ class SidMethodAlgorithm(QCAlgorithm):
                 self._scan_for_signal_and_entry(symbol, state, bar,
                                                  spy_long_ok, spy_short_ok)
 
-            # Update rsi_prev for next bar
+            # Update rsi_prev / macd histogram for next bar
             state.rsi_prev = state.rsi.current.value
+            state.macd_hist_prev = state.macd.histogram.current.value
 
         # Update SPY rsi_prev for next bar (after consumers have used current/prev)
         self._roll_spy_rsi()
@@ -372,29 +376,36 @@ class SidMethodAlgorithm(QCAlgorithm):
                                            spy_long_ok, spy_short_ok):
             return
 
+        # Respect the concurrent-position cap (broad-universe margin safety).
+        open_positions = sum(1 for s in self.symbol_state.values() if s.in_trade)
+        if open_positions >= MAX_OPEN_POSITIONS:
+            return
+
         # All conditions met → enter
         self._enter_trade(symbol, state, bar)
 
     def _entry_conditions_met(self, symbol, state, bar, rsi_now, rsi_prev,
                               spy_long_ok, spy_short_ok):
-        # --- A. RSI direction + MACD alignment ---
+        # --- A. RSI direction + MACD alignment (checklist item 2: "MACD point/cross") ---
+        # Faithful to backtest.py _check_entry_conditions:
+        #   bullish = (MACD line > signal)  OR  (hist > 0 AND hist rising)   [cross OR point]
+        #   bearish = (MACD line < signal)  OR  (hist < 0 AND hist falling)
         macd_line = state.macd.current.value
         macd_signal = state.macd.signal.current.value
         macd_hist = state.macd.histogram.current.value
-        # MACD histogram "increasing" check — need history; we keep no rolling window
-        # for it, so we proxy "histogram increasing" by current >= signal_threshold of 0.
-        # The trader repo logic is: bullish if (macd > signal) OR (hist > 0 AND hist increasing).
-        # Without bar-over-bar hist history we conservatively require macd > signal for long
-        # (or macd < signal for short). This is slightly stricter than the trader code;
-        # see QUESTIONS_FOR_SYDNEY.md.
+        macd_hist_prev = state.macd_hist_prev
         if state.pending_signal_type == "OS":
             rsi_rising = rsi_now > rsi_prev
-            macd_bullish = macd_line > macd_signal
+            macd_bullish = (macd_line > macd_signal) or (
+                macd_hist_prev is not None and macd_hist > 0 and macd_hist > macd_hist_prev
+            )
             if not (rsi_rising and macd_bullish):
                 return False
         else:
             rsi_falling = rsi_now < rsi_prev
-            macd_bearish = macd_line < macd_signal
+            macd_bearish = (macd_line < macd_signal) or (
+                macd_hist_prev is not None and macd_hist < 0 and macd_hist < macd_hist_prev
+            )
             if not (rsi_falling and macd_bearish):
                 return False
 
